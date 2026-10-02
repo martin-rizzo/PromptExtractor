@@ -1,0 +1,16 @@
+
+
+# Ignore all hidden files/folders in the root directory,
+# except for the specified files
+/.*
+!.gitignore
+
+
+# Ignore any file or folder ending with a tilde (~)
+*~.*
+*~/
+
+
+# ???
+/bin/
+*.o
