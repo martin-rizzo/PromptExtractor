@@ -2,7 +2,7 @@
 # Default installation path is $(HOME)/.local/bin
 
 CC         = gcc
-CFLAGS     = -std=c99 -pedantic -Wall -Wextra -Wno-unused-function -Isrc -Ideps -g
+CFLAGS     = -std=c99 -pedantic -Wall -Wextra -Wunused-function -Isrc -Ideps -g
 LDFLAGS    = 
 TARGET_DIR = bin
 TARGET     = $(TARGET_DIR)/readprompt

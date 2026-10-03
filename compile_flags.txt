@@ -2,7 +2,7 @@
 -pedantic
 -Wall
 -Wextra
--Wno-unused-function
+-Wunused-function
 -Isrc
 -Ideps
 -g

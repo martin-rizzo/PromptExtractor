@@ -12,13 +12,12 @@
 #include <stdlib.h>
 #include <stdio.h>
 #include <string.h>
+#include <stdbool.h>
+#include "genparams.h"
 #define VERSION_MAJOR 0
 #define VERSION_MINOR 0
 #define OPT_EQ(arg,opt,long_opt) (strcmp(arg,(opt)) == 0 || strcmp(arg,(long_opt)) == 0)
-#define FALSE 0
-#define TRUE  1
-typedef int   Bool;
-typedef char* StrPtr;
+typedef utf8* StrPtr;
 
 static const char HELP[] = 
 "Usage: %s [OPTIONS] image-file(s)\n"
@@ -111,29 +110,43 @@ int print_version(void) {
     return 0;
 }
 
-/*===================== PRINTING PROMPT & GEN PARAMS ======================*/
+void print_report(REPORT_TYPE type, const utf8* message) {
+    switch( type ) {
+        case REPORT_WARNING:
+            printf("WARNING: %s\n", message);
+            break;
+        case REPORT_ERROR:
+            printf("ERROR: %s\n", message);
+            break;
+        default:
+            printf("%s\n", message);
+            break;
+    }
+}
 
+
+
+/*===================== PRINTING PROMPT & GEN PARAMS ======================*/
 
 /**
  * Prints the prompts embedded in multiple image files.
  *
- * This function iterates over a list of filenames, loading generation 
- * parameters for each file. If successful, it calls `print_prompt` to output
- * the filename and its associated prompt.
- *
  * @param file_count The number of files in the filenames array.
- * @param filenames  An array of strings where each element is a filename of an image.
+ * @param filenames  An array of strings where each element is a filepath of an image.
  * @return The exit code that should be returned by the command (0 == success)
  */
-int print_all_prompts(int file_count, StrPtr *filenames) {
-    int i;
+static
+int print_all_prompts(int file_count, utf8* filepaths[]) {
 
-    /* loop through each filename and print it to the console */
-    for( i=0 ; i < file_count ; ++i ) {
-        printf("##>> %s\n", filenames[i]);
+    // loop through each filename and print it to the console
+    for( int i=0 ; i < file_count ; ++i ) {
+        const GenParams* genparams = read_genparams(filepaths[i], print_report);
+        printf("##>> Prompt: '%s'", genparams->prompt);
+        free_genparams( genparams );
     }
     return 0;
 }
+
 
 /*===========================================================================
 |  //////////////////////////////// MAIN /////////////////////////////////  | 
@@ -152,26 +165,26 @@ int print_all_prompts(int file_count, StrPtr *filenames) {
  */
 int main(int argc, StrPtr argv[])
 {
-    Bool disable_options = FALSE; /*< flag to disable further option parsing.     */
-    Bool disable_colors  = FALSE; /*< flag to disable color output.               */
-    Bool show_help       = FALSE; /*< flag to indicate if help should be shown.   */
-    Bool show_version    = FALSE; /*< flag to indicate if version should be shown.*/
-    int  color_theme     = 1;     /*< color theme to use (default = colorful).    */
+    bool disable_options = false; // flag to disable further option parsing.     
+    bool disable_colors  = false; // flag to disable color output.               
+    bool show_help       = false; // flag to indicate if help should be shown.   
+    bool show_version    = false; // flag to indicate if version should be shown.
+    int  color_theme     = 1;     // color theme to use (default = colorful).    
     StrPtr *filenames = malloc(sizeof(StrPtr) * argc);
-    int error = 0;                /*< Error code returned by the program. */
-    int i, file_count;            /*< Loop index and count of filenames.  */
+    int error = 0;                // Error code returned by the program.
+    int i, file_count;            // Loop index and count of filenames.  
     set_color_theme(0);
 
-    /* iterates over all the arguments provided by the user */
+    // iterates over all the arguments provided by the user
     file_count = 0;
     for( i=1 ; i < argc && !error ; ++i ) {
         const char* arg = argv[i];
 
         if( arg[0] == '-'  && !disable_options ) {
-            if     (OPT_EQ(arg, "-h", "--help"    )) { show_help       = TRUE; }
-            else if(OPT_EQ(arg, "-v", "--version" )) { show_version    = TRUE; }
-            else if(OPT_EQ(arg, "-n", "--no-color")) { disable_colors  = TRUE; }
-            else if( strcmp(arg,"--")==0           ) { disable_options = TRUE; }
+            if     (OPT_EQ(arg, "-h", "--help"    )) { show_help       = true; }
+            else if(OPT_EQ(arg, "-v", "--version" )) { show_version    = true; }
+            else if(OPT_EQ(arg, "-n", "--no-color")) { disable_colors  = true; }
+            else if( strcmp(arg,"--")==0           ) { disable_options = true; }
             else { fprintf(stderr, "Unknown option: %s\n", arg); error=1; }
         }
         else {
@@ -179,21 +192,21 @@ int main(int argc, StrPtr argv[])
         }
     }
 
-    /* set color theme based on user preference */
+    // set color theme based on user preference
     if( disable_colors ) { color_theme = 0; }
     set_color_theme(color_theme);
 
-    /* if no filenames were provided, show help */
-    if( file_count==0 ) { show_help = TRUE; }
+    // if no filenames were provided, show help
+    if( file_count==0 ) { show_help = true; }
 
-    /* execute the command based on parsed options */
+    // execute the command based on parsed options
     if( !error ) { 
         if     ( show_version ) { error = print_version();  }
         else if( show_help    ) { error = print_help(argv); }
         else                    { error = print_all_prompts(file_count,filenames); }
     }
 
-    /* free the allocated memory for filenames */
+    // free the allocated memory for filenames
     free(filenames);
     return error;
 }
