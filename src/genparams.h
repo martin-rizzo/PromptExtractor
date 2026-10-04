@@ -16,6 +16,8 @@ struct GenParams {
 
 };
 typedef struct GenParams GenParams;
+#define free_genparams(x) free((void*)x)
+
 
 
 enum REPORT_TYPE {
@@ -38,7 +40,6 @@ const GenParams* read_genparams_from_file(FILE*    file,
                                           ReportFn report
                                           );
 
-#define free_genparams(x) free((void*)x)
 
 
 #endif /*__GENPARAMS_H__*/
