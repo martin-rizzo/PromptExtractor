@@ -3,20 +3,9 @@
 #define NamedStrPointer NamedStr*
 
 
-/**
- * Packs a name and a value into a NamedStr structure.
- *
- * Both `name_in_heap` and `value_in_heap` must have been allocated on the heap
- * (e.g., using malloc, strdup, etc.). The returned `NamedStr` object becomes
- * the owner of both `name_in_heap` and `value_in_heap`, so they do not need to
- * be freed separately.
- *
- * @param name_in_heap  Pointer to the name string allocated in the heap.
- * @param value_in_heap Pointer to the value string allocated in the heap.
- * @param chain         Pointer to the NamedStr node where the new object will be chained.
- *                      If it should not be chained to any node, pass `NULL`.
- * @return Pointer to the newly created NamedStr object.
- */
+/*============================ NamedStr OBJECT ============================*/
+
+// Packs a name and a value into a NamedStr structure.
 NamedStr* pack_namedstring(const UTF8* name_in_heap,
                            const UTF8* value_in_heap,
                            NamedStr*   chain)
@@ -29,15 +18,7 @@ NamedStr* pack_namedstring(const UTF8* name_in_heap,
 }
 
 
-/**
- * Destroys the provided NamedStr object and frees its resources.
- *
- * ATTENTION: It does not remove the subsequent objects in the chain.
- *
- * @param namedstr Pointer to the NamedStr object to destroy.
- * @return Pointer to the next object in the chain,
- *         or `NULL` if there is no next object.
- */
+// Destroys the provided NamedStr object and frees its resources.
 const NamedStr* destroy_namedstring(const NamedStr* namedstr)
 {
     if( !namedstr ) {
@@ -51,6 +32,7 @@ const NamedStr* destroy_namedstring(const NamedStr* namedstr)
 }
 
 
+/*=========================== EmbStrings OBJECT ===========================*/
 
 /**
  * Packs a linked chain of NamedStr nodes into an EmbStrings structure.

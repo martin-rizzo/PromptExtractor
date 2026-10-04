@@ -11,6 +11,11 @@
 *~/
 
 
+# Ignore documentation files
+/doc/
+Doxyfile
+
+
 # Ignore build artifacts and compiled files
 /bin/
 *.o
