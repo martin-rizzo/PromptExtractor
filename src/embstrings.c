@@ -1,16 +1,47 @@
+/*
+| File    : embstrings.c
+| Purpose : Manage embedded strings and named strings.
+| Author  : Martin Rizzo | <martinrizzo@gmail.com>
+| Date    : Oct 4, 2026
+| Repo    : https://github.com/martin-rizzo/ReadPrompt
+| License : MIT
+|- - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+|                                ReadPrompt
+| A lightweight CLI tool to extract embedded prompts from AI-generated images.
+\_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _*/
 #include <stdlib.h>
+#include <string.h>
 #include "embstrings.h"
-#define NamedStrPointer NamedStr*
+#define NamedStrPointer RpNamedStr*
 
 
-/*============================ NamedStr OBJECT ============================*/
+// Duplicates a string, allocating memory for the copy.
+char *rp_strdup(const char *s) {
+    if (!s) { return NULL; }
+    size_t total_bytes = strlen(s) + 1;
+    char   *newstring  = malloc(total_bytes);
+    if (newstring) { memcpy(newstring, s, total_bytes); }
+    return newstring;
+}
 
-// Packs a name and a value into a NamedStr structure.
-NamedStr* pack_namedstring(const UTF8* name_in_heap,
-                           const UTF8* value_in_heap,
-                           NamedStr*   chain)
+
+/*============================ NamedStr STRUCT ============================*/
+
+// Creates a new RpNamedStr structure with copies of the provided name and value.
+RpNamedStr* rp_create_namedstr(const RpUTF8* name,
+                               const RpUTF8* value,
+                               RpNamedStr*   chain)
 {
-    NamedStr* namedstr = malloc(sizeof(NamedStr));
+    return rp_attach_namedstr(strdup(name), strdup(value), chain);
+}
+
+
+// Creates a new RpNamedStr that takes ownership of the provided name and value.
+RpNamedStr* rp_attach_namedstr(const RpUTF8* name_in_heap,
+                               const RpUTF8* value_in_heap,
+                               RpNamedStr*   chain)
+{
+    RpNamedStr* namedstr = malloc(sizeof(RpNamedStr));
     namedstr->name  = name_in_heap;
     namedstr->value = value_in_heap;
     namedstr->_next = chain;
@@ -18,13 +49,11 @@ NamedStr* pack_namedstring(const UTF8* name_in_heap,
 }
 
 
-// Destroys the provided NamedStr object and frees its resources.
-const NamedStr* destroy_namedstring(const NamedStr* namedstr)
+// Destroys a single RpNamedStr node and frees its associated resources.
+const RpNamedStr* rp_destroy_namedstr(const RpNamedStr* namedstr)
 {
-    if( !namedstr ) {
-        return NULL;
-    }
-    NamedStr* next_in_chain = namedstr->_next;
+    if( !namedstr ) { return NULL; }
+    RpNamedStr* next_in_chain = namedstr->_next;
     free( (void*)namedstr->name  );
     free( (void*)namedstr->value );
     free( (void*)namedstr );
@@ -32,23 +61,22 @@ const NamedStr* destroy_namedstring(const NamedStr* namedstr)
 }
 
 
-/*=========================== EmbStrings OBJECT ===========================*/
-
-/**
- * Packs a linked chain of NamedStr nodes into an EmbStrings structure.
- *
- * Allocates memory for an EmbStrings structure and populates it with the
- * provided chain of NamedStr nodes. It counts the nodes, allocates an
- * array of pointers to hold them, and fills the array in reverse order
- * (from last to first) while preserving the original chain order.
- *
- * @param chain_in_heap Pointer to the first node of the linked chain.
- * @return Pointer to the newly created EmbStrings structure.
- */
-EmbStrings* pack_embstrings(NamedStr* chain_in_heap)
+// Destroys an entire chain of RpNamedStr nodes.
+void rp_destroy_namedstr_chain(const RpNamedStr* namedstr)
 {
-    NamedStr* current;
-    EmbStrings* embstrings = malloc(sizeof(EmbStrings));
+    while (namedstr!=NULL) {
+        namedstr = rp_destroy_namedstr(namedstr);
+    }
+}
+
+
+/*========================== RpEmbStrings STRUCT ==========================*/
+
+// Creates a new RpEmbStrings structure taking ownership of the string chain.
+RpEmbStrings* rp_attach_embstrings(RpNamedStr* chain_in_heap)
+{
+    RpNamedStr* current;
+    RpEmbStrings* embstrings = malloc(sizeof(RpEmbStrings));
 
     // count the number of elements in the chain
     current = chain_in_heap;
@@ -57,7 +85,7 @@ EmbStrings* pack_embstrings(NamedStr* chain_in_heap)
         current = current->_next;
     }
 
-    // initialize EmbStrings and allocate space for 'items' to hold all chain elements
+    // initialize RpEmbStrings and allocate space for 'items' to hold all chain elements
     embstrings->items  = malloc(sizeof(NamedStrPointer) * count);
     embstrings->count  = count;
     embstrings->_chain = chain_in_heap;
@@ -73,15 +101,13 @@ EmbStrings* pack_embstrings(NamedStr* chain_in_heap)
 }
 
 
-void destroy_embstrings(const EmbStrings* self)
+// Destroys an RpEmbStrings structure and frees its associated resources.
+void rp_destroy_embstrings(const RpEmbStrings* embstrings)
 {
-    // destroy each element in the chain
-    const NamedStr* current = self->_chain;
-    while (current != NULL) {
-        current = destroy_namedstring(current);
-    }
+    if( !embstrings ) { return; }
     
-    // free the array of pointers and the EmbStrings itself
-    free((void*)self->items);
-    free((void*)self);
+    // free the array of pointers and the RpEmbStrings itself
+    rp_destroy_namedstr_chain(embstrings->_chain);
+    free((void*)embstrings->items);
+    free((void*)embstrings);
 }

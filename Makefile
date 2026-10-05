@@ -2,12 +2,12 @@
 # Default installation path is $(HOME)/.local/bin
 
 CC         = gcc
-CFLAGS     = -std=c99 -pedantic -Wall -Wextra -Wunused-function -Isrc -Ideps -g
+CFLAGS     = -std=c99 -pedantic -Wall -Wextra -Wunused-function -Isrc -Isrc/filetypes -Ideps -g
 LDFLAGS    = 
 TARGET_DIR = bin
 TARGET     = $(TARGET_DIR)/readprompt
-HEADERS    = $(wildcard src/*.h)
-SRCS       = $(wildcard src/*.c)
+HEADERS    = $(wildcard src/*.h) $(wildcard src/filetypes/*.h)
+SRCS       = $(wildcard src/*.c) $(wildcard src/filetypes/*.c)
 OBJS       = $(SRCS:.c=.o)
 
 # Define default installation prefix

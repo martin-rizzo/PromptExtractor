@@ -14,6 +14,8 @@
 #include <string.h>
 #include <stdbool.h>
 #include "genparams.h"
+#include "embstrings.h"
+#include "filetypes/png.h"
 #define VERSION_MAJOR 0
 #define VERSION_MINOR 0
 #define OPT_EQ(arg,opt,long_opt) (strcmp(arg,(opt)) == 0 || strcmp(arg,(long_opt)) == 0)
@@ -140,9 +142,17 @@ int print_all_prompts(int file_count, utf8* filepaths[]) {
 
     // loop through each filename and print it to the console
     for( int i=0 ; i < file_count ; ++i ) {
-        const GenParams* genparams = read_genparams(filepaths[i], print_report);
-        printf("##>> Prompt: '%s'", genparams->prompt);
-        free_genparams( genparams );
+
+        FILE* file = fopen(filepaths[i], "r");
+        if( file ) {
+            RpEmbStrings* embstrings = RP_embstrings_from_png(file);
+            rp_destroy_embstrings(embstrings);
+        }
+        if( file ) { fclose(file); }
+
+        //const GenParams* genparams = read_genparams(filepaths[i], print_report);
+        //printf("##>> Prompt: '%s'", genparams->prompt);
+        //free_genparams( genparams );
     }
     return 0;
 }

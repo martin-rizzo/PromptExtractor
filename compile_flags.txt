@@ -4,5 +4,6 @@
 -Wextra
 -Wunused-function
 -Isrc
+-Isrc/filetypes
 -Ideps
 -g

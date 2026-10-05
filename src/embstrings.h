@@ -1,87 +1,162 @@
-#ifndef EMBSTRINGS_H
-#define EMBSTRINGS_H
+/*
+| File    : embstrings.h
+| Purpose : Manage embedded strings and named strings.
+| Author  : Martin Rizzo | <martinrizzo@gmail.com>
+| Date    : Oct 4, 2026
+| Repo    : https://github.com/martin-rizzo/ReadPrompt
+| License : MIT
+|- - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+|                                ReadPrompt
+| A lightweight CLI tool to extract embedded prompts from AI-generated images.
+\_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _*/
+#ifndef RP__EMBSTRINGS_H__
+#define RP__EMBSTRINGS_H__
+#include "types.h"
 
-#define UTF8 char
+
+/**
+ * Duplicates a string, allocating memory for the copy.
+ *
+ * This function serves as a custom implementation of `strdup`, utilized
+ * when the standard library does not provide the `strdup` function.
+ *
+ * @param s The string to duplicate. If `NULL`, returns `NULL`.
+ * @return
+ *    A pointer to the newly allocated duplicated string, or `NULL`
+ *    if memory allocation fails or if `s` is `NULL`.
+ */
+char *rp_strdup(const char *s);
+
+#ifndef _POSIX_C_SOURCE
+#define strdup(s) rp_strdup(s)
+#endif
 
 
 /*============================ NamedStr OBJECT ============================*/
 
 /**
- * @struct NamedStr
- * @brief  Represents a named string that can be chained to form a linked list.
- * A NamedStr object holds a `name` and a `value`, both of which are UTF-8 strings.
+ * Represents a named string that can be chained to form a linked list.
+ * @details A RpNamedStr object holds a `name` and a `value`, both of which are UTF-8 strings.
  */
-struct NamedStr {
-    const UTF8*      name;  ///< The name of the string.
-    const UTF8*      value; ///< The string value itself.
-    struct NamedStr* _next; ///< Pointer to the next string in the chain (NULL if last).
+struct RpNamedStr {
+    const  RpUTF8*   name;  ///< The name of the string.
+    const  RpUTF8*   value; ///< The string value itself.
+    struct RpNamedStr* _next; ///< Pointer to the next string in the chain (NULL if last).
 };
-typedef struct NamedStr  NamedStr;
+typedef struct RpNamedStr  RpNamedStr;
+
 
 /**
- * Packs a name and a value into a NamedStr structure.
- * 
- * Both `name_in_heap` and `value_in_heap` must have been allocated on the heap
- * (e.g., using malloc, strdup, etc.). The returned `NamedStr` object becomes
- * the owner of both, so they do not need to be freed separately.
+ * Creates a new RpNamedStr structure with copies of the provided name and value.
  *
- * @relatesalso NamedStr
+ * This function is safe as it duplicates the input strings, so the caller
+ * retains ownership of the original name and value strings.
+ * @relatesalso RpNamedStr
  *
- * @param name_in_heap  Pointer to the name string allocated in the heap.
- * @param value_in_heap Pointer to the value string allocated in the heap.
- * @param chain         Pointer to the NamedStr node where the new object will be chained.
- *                      If it should not be chained to any node, pass `NULL`.
+ * @param name  The name string to copy.
+ * @param value The value string to copy.
+ * @param chain The next node in the chain.
  * @return
- *    Pointer to the newly created NamedStr object.
+ *     A pointer to the newly created RpNamedStr structure.
  */
-NamedStr* pack_namedstring(const UTF8* name_in_heap, const UTF8* value_in_heap, NamedStr* next);
-
+RpNamedStr* rp_create_namedstr(const RpUTF8* name,
+                               const RpUTF8* value,
+                               RpNamedStr*   next
+                               );
 
 /**
- * Destroys the provided NamedStr object and frees its resources.
+ * Creates a new RpNamedStr that takes ownership of the provided name and value.
  *
- * @attention
- * It does not remove the subsequent objects in the chain.
- * 
- * @relatesalso NamedStr
+ * This function is slightly less safe than `rp_create_namedstr` because it
+ * takes ownership of both strings passed as parameters. Therefore, both
+ * should be allocated on the heap and should not be freed externally.
+ * @relatesalso RpNamedStr
  *
- * @param namedstr Pointer to the NamedStr object to destroy.
+ * @param name_in_heap  The name string (ownership transferred).
+ * @param value_in_heap The value string (ownership transferred).
+ * @param chain         The next node in the chain.
  * @return
- *    Pointer to the next object in the chain, or `NULL` if there is no next object.
+ *     A pointer to the newly attached RpNamedStr structure.
  */
-const NamedStr* destroy_namedstring(const NamedStr* namedstr);
-
-
-
-/*=========================== EmbStrings OBJECT ===========================*/
+RpNamedStr* rp_attach_namedstr(const RpUTF8* name_in_heap,
+                               const RpUTF8* value_in_heap,
+                               RpNamedStr* next
+                               );
 
 /**
- * @struct EmbStrings
- * @brief Represents a collection of NamedStr items.
+ * Destroys a single RpNamedStr node and frees its associated resources.
  *
- * EmbStrings holds an array of pointers to NamedStr items, a count of items,
- * and a pointer to the head of the linked chain of NamedStr nodes.
+ * This function frees the memory allocated for the `name` and `value`
+ * strings, as well as the `RpNamedStr` node itself.
+ * @attention It does not traverse the chain, it only operates on the provided node.
+ * @relatesalso RpNamedStr
+ *
+ * @param namedstr Pointer to the RpNamedStr node to destroy.
+ *                 If `NULL` the function returns `NULL` immediately.
+ * @return
+ *    A pointer to the next node in the chain or `NULL` if the provided
+ *    node was the last in the chain (or if namedstr was NULL).
  */
-struct EmbStrings {
-    NamedStr**  items;  /**< Array of pointers to NamedStr items. */
-    int         count;  /**< Number of items in the array. */
-    NamedStr*   _chain; /**< Pointer to the head of the linked chain of NamedStr nodes. */
+const RpNamedStr* rp_destroy_namedstr(const RpNamedStr* namedstr
+                                      );
+
+/**
+ * Destroys an entire chain of RpNamedStr nodes.
+ *
+ * Iterates through the linked list starting from the given node, destroying
+ * each node sequentially. This function effectively frees all memory
+ * associated with the chain.
+ * @relatesalso RpNamedStr
+ *
+ * @param namedstr Pointer to the first node of the chain to destroy.
+ *                 If `NULL`, the function does nothing.
+ */
+void rp_destroy_namedstr_chain(const RpNamedStr* namedstr
+                               );
+
+
+/*========================== RpEmbStrings STRUCT ==========================*/
+
+/**
+ * Represents a collection of RpNamedStr items.
+ */
+struct RpEmbStrings {
+    RpNamedStr** items;  ///< Array of pointers to RpNamedStr items.
+    int          count;  ///< Number of items in the array.
+    RpNamedStr*  _chain; ///< Pointer to the head of the linked chain of RpNamedStr nodes.
 };
-typedef struct EmbStrings EmbStrings;
+typedef struct RpEmbStrings RpEmbStrings;
+
 
 /**
- * @brief Destroys the EmbStrings structure and its associated resources.
+ * Creates a new RpEmbStrings structure taking ownership of the string chain.
  *
- * @param ptr Pointer to the EmbStrings structure to destroy.
- */
-extern void destroy_embstrings(const EmbStrings* ptr);
-
-/**
- * @brief Packs a linked chain of NamedStr nodes into an EmbStrings structure.
+ * This function takes ownership of the entire linked list (chain) passed as
+ * the `chain_in_heap` parameter. The RpEmbStrings structure will manage the
+ * lifecycle of these nodes, and they will be freed when the RpEmbStrings
+ * structure is destroyed via `rp_destroy_embstrings`.
+ * @relatesalso RpEmbStrings
  *
  * @param chain_in_heap Pointer to the first node of the linked chain.
- * @return Pointer to the newly created EmbStrings structure.
+ *                      The entire chain is owned by the returned RpEmbStrings
+ *                      and should not be freed externally.
+ * @return
+ *    A pointer to the newly created RpEmbStrings structure.
+ *    The caller should use `rp_destroy_embstrings` to free this structure
+ *    and its associated resources.
  */
-EmbStrings*  pack_embstrings(NamedStr* chain_in_heap);
+RpEmbStrings* rp_attach_embstrings(RpNamedStr* chain_in_heap);
 
-#endif /* EMBSTRINGS_H */
+
+
+/**
+ * Destroys an RpEmbStrings structure and frees its associated resources.
+ * @relatesalso RpEmbStrings
+ *
+ * @param ptr Pointer to the RpEmbStrings structure to destroy.
+ *            If `NULL`, the function does nothing.
+ */
+void rp_destroy_embstrings(const RpEmbStrings* ptr);
+
+
+#endif /*RP__EMBSTRINGS_H__*/
