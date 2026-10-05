@@ -15,7 +15,7 @@
 #include <stdbool.h>
 #include "genparams.h"
 #include "embstrings.h"
-#include "filetypes/png.h"
+#include "image_fmt/png.h"
 #define VERSION_MAJOR 0
 #define VERSION_MINOR 0
 #define OPT_EQ(arg,opt,long_opt) (strcmp(arg,(opt)) == 0 || strcmp(arg,(long_opt)) == 0)

@@ -1,5 +1,5 @@
 /*
-| File    : filetypes/png.c
+| File    : image_fmt/png.c
 | Purpose : Read a PNG file and extract embedded text chunks.
 | Author  : Martin Rizzo | <martinrizzo@gmail.com>
 | Date    : Oct 4, 2026

@@ -4,6 +4,6 @@
 -Wextra
 -Wunused-function
 -Isrc
--Isrc/filetypes
+-Isrc/image_fmt
 -Ideps
 -g
