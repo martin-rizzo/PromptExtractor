@@ -16,10 +16,11 @@
 #include "genparams.h"
 #include "embstrings.h"
 #include "image_fmt/png.h"
+#include "image_fmt/jpeg.h"
+typedef RpUTF8* RpStringPtr;
 #define VERSION_MAJOR 0
 #define VERSION_MINOR 0
 #define OPT_EQ(arg,opt,long_opt) (strcmp(arg,(opt)) == 0 || strcmp(arg,(long_opt)) == 0)
-typedef utf8* StrPtr;
 
 static const char HELP[] = 
 "Usage: %s [OPTIONS] image-file(s)\n"
@@ -94,7 +95,7 @@ void set_color_theme(int index) {
  *             (argv[0]) should contain the name of the executable.
  * @return The exit code that should be returned by the command (0 == success)
  */
-int print_help(StrPtr argv[]) {
+int print_help(RpStringPtr argv[]) {
     printf(HELP, argv[0]);
     return 0;
 }
@@ -112,7 +113,7 @@ int print_version(void) {
     return 0;
 }
 
-void print_report(REPORT_TYPE type, const utf8* message) {
+void print_report(REPORT_TYPE type, const RpUTF8* message) {
     switch( type ) {
         case REPORT_WARNING:
             printf("WARNING: %s\n", message);
@@ -138,15 +139,25 @@ void print_report(REPORT_TYPE type, const utf8* message) {
  * @return The exit code that should be returned by the command (0 == success)
  */
 static
-int print_all_prompts(int file_count, utf8* filepaths[]) {
+int print_all_prompts(int file_count, RpUTF8* filepaths[]) {
 
     // loop through each filename and print it to the console
-    for( int i=0 ; i < file_count ; ++i ) {
+    for( int fidx=0 ; fidx < file_count ; ++fidx ) {
+        const RpUTF8* filepath = filepaths[fidx];
 
-        FILE* file = fopen(filepaths[i], "r");
-        if( file ) {
-            RpEmbStrings* embstrings = RP_embstrings_from_png(file);
-            rp_destroy_embstrings(embstrings);
+        FILE* file = fopen(filepath, "r");
+        if( file )
+        {
+            RpEmbStrings* embstrings = NULL;
+            if (!embstrings) { embstrings = rp_embstrings_from_png(file);  }
+            if (!embstrings) { embstrings = rp_embstrings_from_jpeg(file); }
+            if (embstrings) {
+                printf("##>> %s\n", filepath);
+                for (int i=0; i<embstrings->count; ++i) {
+                    printf("%s: %.60s\n", embstrings->items[i]->name, embstrings->items[i]->value);
+                }
+                rp_destroy_embstrings(embstrings);
+            }
         }
         if( file ) { fclose(file); }
 
@@ -173,14 +184,14 @@ int print_all_prompts(int file_count, utf8* filepaths[]) {
  * @param argv The array of command-line arguments.
  * @return The exit status of the program (0 for success, >=1 for errors).
  */
-int main(int argc, StrPtr argv[])
+int main(int argc, char* argv[])
 {
     bool disable_options = false; // flag to disable further option parsing.     
     bool disable_colors  = false; // flag to disable color output.               
     bool show_help       = false; // flag to indicate if help should be shown.   
     bool show_version    = false; // flag to indicate if version should be shown.
     int  color_theme     = 1;     // color theme to use (default = colorful).    
-    StrPtr *filenames = malloc(sizeof(StrPtr) * argc);
+    RpStringPtr *filenames = malloc(sizeof(RpStringPtr) * argc);
     int error = 0;                // Error code returned by the program.
     int i, file_count;            // Loop index and count of filenames.  
     set_color_theme(0);

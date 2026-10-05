@@ -15,7 +15,7 @@
 #include "embstrings.h"
 
 
-RpEmbStrings* RP_embstrings_from_png( FILE *file );
+RpEmbStrings* rp_embstrings_from_png( FILE *file );
 
 
 

@@ -2,17 +2,17 @@
 #define __GENPARAMS_H__
 #include <stdio.h>
 #include <stdbool.h>
-typedef char utf8;
+#include "types.h"
 
 
 struct GenParams {
 
-    const utf8* prompt;
-    const utf8* negative_prompt;
-    int         steps;
-    int         seed;
-    float       cfg;
-    const utf8* _data[1];
+    const RpUTF8* prompt;
+    const RpUTF8* negative_prompt;
+    int           steps;
+    int           seed;
+    float         cfg;
+    const RpBYTE* _data[1];
 
 };
 typedef struct GenParams GenParams;
@@ -29,7 +29,7 @@ enum REPORT_TYPE {
 typedef enum REPORT_TYPE REPORT_TYPE;
 
 
-typedef void (ReportFn)(REPORT_TYPE type, const utf8* message);
+typedef void (ReportFn)(REPORT_TYPE type, const RpUTF8* message);
 
 
 const GenParams* read_genparams(const char* filename,

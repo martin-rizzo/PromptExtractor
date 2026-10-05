@@ -104,7 +104,7 @@ bool has_png_signature( FILE *file ) {
 /**
  * Loads all text chunks from a PNG file.
  */
-RpEmbStrings* RP_embstrings_from_png( FILE *file )
+RpEmbStrings* rp_embstrings_from_png( FILE *file )
 {
     #define CHUNK_HEADER_SIZE 8 /* CHUNK_LENGTH + CHUNK_TYPE */
     #define CHUNK_CRC_SIZE    4
@@ -160,14 +160,10 @@ RpEmbStrings* RP_embstrings_from_png( FILE *file )
             candidate_chunk + strlen(candidate_chunk) + 1,
             namedstr_chain);
 
-        printf("tEXt chunk name: %s\n", namedstr_chain->name );
-
-
         free( candidate_chunk );
     }
 
-    rp_destroy_namedstr_chain( namedstr_chain );
-    return NULL;
+    return namedstr_chain ? rp_attach_embstrings( namedstr_chain ) : NULL;
 }
 
 
