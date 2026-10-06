@@ -14,21 +14,56 @@
 #include "types.h"
 
 
+enum RP_ENCODING {
+    RP_ENCODING_UNKNOWN,
+    RP_ENCODING_ASCII,
+    RP_ENCODING_UTF8,
+    RP_ENCODING_UTF16BE,
+    RP_ENCODING_UTF16LE,
+};
+typedef enum RP_ENCODING RP_ENCODING;
+
 /**
- * Duplicates a string, allocating memory for the copy.
+ * Detects the encoding of a string.
  *
- * This function serves as a custom implementation of `strdup`, utilized
- * when the standard library does not provide the `strdup` function.
+ * This function analyzes a buffer to determine the encoding of a string.
+ * It counts the null characters in even and odd positions and deduces if
+ * the string is ASCII, UTF-8, UTF-16BE, or UTF-16LE encoded.
  *
- * @param s The string to duplicate. If `NULL`, returns `NULL`.
+ * @param buffer       Pointer to the buffer containing the string to be analyzed.
+ * @param buffer_size  Size of the buffer in bytes.
  * @return
- *    A pointer to the newly allocated duplicated string, or `NULL`
- *    if memory allocation fails or if `s` is `NULL`.
+ *     The encoding of the string. Possible values are:
+ *       - RP_ENCODING_UNKNOWN
+ *       - RP_ENCODING_ASCII
+ *       - RP_ENCODING_UTF8
+ *       - RP_ENCODING_UTF16BE
+ *       - RP_ENCODING_UTF16LE
  */
-char *rp_strdup(const char *s);
+RP_ENCODING rp_detect_encoding(const void *buffer, size_t buffer_size);
+
+
+/**
+ * Converts a source character buffer into a newly allocated UTF-8 string.
+ *
+ * Decodes the input buffer according to the specified encoding and returns
+ * a newly allocated, null-terminated UTF-8 string. The caller is responsible
+ * for freeing the returned pointer.
+ *
+ * @param buffer  Pointer to the source buffer. If NULL, returns NULL.
+ * @param bufsize Size of the source buffer in bytes.
+ *                If 0, the function automatically determines the size.
+ * @param bufencoding The encoding format of the source buffer. Supported
+ *                    encodings include ASCII, UTF-8, UTF-16BE, UTF-16LE,
+ *                    and UNKNOWN.
+ * @return A pointer to the newly allocated UTF-8 string, or NULL if allocation
+ *         fails. For unknown encodings, returns a newly allocated empty string.
+ */
+RpUTF8 *rp_strdup_utf8(const void* buffer, size_t bufsize, RP_ENCODING bufencoding);
+
 
 #ifndef _POSIX_C_SOURCE
-#define strdup(s) rp_strdup(s)
+#define strdup(s) rp_strdup_utf8(s,0,RP_ENCODING_UTF8)
 #endif
 
 
