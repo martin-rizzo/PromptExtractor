@@ -1,12 +1,12 @@
 /*
 | File    : main.h
-| Purpose : Parsing command line arguments and running the `readprompt` command.
+| Purpose : Parsing command line arguments and running the `promptex` command.
 | Author  : Martin Rizzo | <martinrizzo@gmail.com>
 | Date    : Oct 2, 2026
-| Repo    : https://github.com/martin-rizzo/ReadPrompt
+| Repo    : https://github.com/martin-rizzo/PromptExtractor
 | License : MIT
 |- - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
-|                                ReadPrompt
+|                              PromptExtractor
 | A lightweight CLI tool to extract embedded prompts from AI-generated images.
 \_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _*/
 #include <stdlib.h>
@@ -17,7 +17,7 @@
 #include "embstrings.h"
 #include "image_fmt/png.h"
 #include "image_fmt/jpeg.h"
-typedef RpUTF8* RpStringPtr;
+typedef PeUTF8* PeStringPtr;
 #define VERSION_MAJOR 0
 #define VERSION_MINOR 0
 #define OPT_EQ(arg,opt,long_opt) (strcmp(arg,(opt)) == 0 || strcmp(arg,(long_opt)) == 0)
@@ -33,7 +33,7 @@ static const char HELP[] =
 "    -v, --version     Show version information and exit.\n"
 "\n"
 "  Examples:\n"
-"    readprompt image1.png image2.jpg\n"
+"    %s image1.png image2.jpg\n"
 "\n";
 
 /*============================== ANSI COLORS ==============================*/
@@ -95,8 +95,8 @@ void set_color_theme(int index) {
  *             (argv[0]) should contain the name of the executable.
  * @return The exit code that should be returned by the command (0 == success)
  */
-int print_help(RpStringPtr argv[]) {
-    printf(HELP, argv[0]);
+int print_help(PeStringPtr argv[]) {
+    printf(HELP, argv[0], argv[0]);
     return 0;
 }
 
@@ -113,7 +113,7 @@ int print_version(void) {
     return 0;
 }
 
-void print_report(REPORT_TYPE type, const RpUTF8* message) {
+void print_report(REPORT_TYPE type, const PeUTF8* message) {
     switch( type ) {
         case REPORT_WARNING:
             printf("WARNING: %s\n", message);
@@ -139,24 +139,24 @@ void print_report(REPORT_TYPE type, const RpUTF8* message) {
  * @return The exit code that should be returned by the command (0 == success)
  */
 static
-int print_all_prompts(int file_count, RpUTF8* filepaths[]) {
+int print_all_prompts(int file_count, PeUTF8* filepaths[]) {
 
     // loop through each filename and print it to the console
     for( int fidx=0 ; fidx < file_count ; ++fidx ) {
-        const RpUTF8* filepath = filepaths[fidx];
+        const PeUTF8* filepath = filepaths[fidx];
 
         FILE* file = fopen(filepath, "r");
         if( file )
         {
-            RpEmbStrings* embstrings = NULL;
-            if (!embstrings) { embstrings = rp_embstrings_from_png(file);  }
-            if (!embstrings) { embstrings = rp_embstrings_from_jpeg(file); }
+            PeEmbStrings* embstrings = NULL;
+            if (!embstrings) { embstrings = pe_embstrings_from_png(file);  }
+            if (!embstrings) { embstrings = pe_embstrings_from_jpeg(file); }
             if (embstrings) {
                 printf("##>> %s\n", filepath);
                 for (int i=0; i<embstrings->count; ++i) {
                     printf("%s: %.60s\n", embstrings->items[i]->name, embstrings->items[i]->value);
                 }
-                rp_destroy_embstrings(embstrings);
+                pe_destroy_embstrings(embstrings);
             }
         }
         if( file ) { fclose(file); }
@@ -186,12 +186,12 @@ int print_all_prompts(int file_count, RpUTF8* filepaths[]) {
  */
 int main(int argc, char* argv[])
 {
-    bool disable_options = false; // flag to disable further option parsing.     
-    bool disable_colors  = false; // flag to disable color output.               
-    bool show_help       = false; // flag to indicate if help should be shown.   
-    bool show_version    = false; // flag to indicate if version should be shown.
-    int  color_theme     = 1;     // color theme to use (default = colorful).    
-    RpStringPtr *filenames = malloc(sizeof(RpStringPtr) * argc);
+    bool disable_options   = false; // flag to disable further option parsing.     
+    bool disable_colors    = false; // flag to disable color output.               
+    bool show_help         = false; // flag to indicate if help should be shown.   
+    bool show_version      = false; // flag to indicate if version should be shown.
+    int  color_theme       = 1;     // color theme to use (default = colorful).    
+    PeStringPtr *filenames = malloc(sizeof(PeStringPtr) * argc);
     int error = 0;                // Error code returned by the program.
     int i, file_count;            // Loop index and count of filenames.  
     set_color_theme(0);

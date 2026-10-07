@@ -54,7 +54,7 @@ Provides the configuration for the VS Code debugger (GDB/LLDB).
             "request": "launch",
 
             // Executable path and arguments
-            "program": "${workspaceFolder}/bin/readprompt",
+            "program": "${workspaceFolder}/bin/promptex",
             "args"   : [],
 
             "cwd"        : "${workspaceFolder}",

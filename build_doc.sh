@@ -20,7 +20,7 @@ fi
 # Customize the configuration for the project
 # Optimize for C, define input and output directories
 echo "⚙️  Configuring project parameters..."
-sed -i 's/^PROJECT_NAME           =.*/PROJECT_NAME           = "ReadPrompt"/' Doxyfile
+sed -i 's/^PROJECT_NAME           =.*/PROJECT_NAME           = "PromptExtractor"/' Doxyfile
 sed -i 's/^INPUT                  =.*/INPUT                  = src README.md/' Doxyfile
 sed -i 's/^OUTPUT_DIRECTORY       =.*/OUTPUT_DIRECTORY       = doc/' Doxyfile
 sed -i 's/^OPTIMIZE_OUTPUT_FOR_C  =.*/OPTIMIZE_OUTPUT_FOR_C  = YES/' Doxyfile

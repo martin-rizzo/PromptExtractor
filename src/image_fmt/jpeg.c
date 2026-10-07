@@ -3,10 +3,10 @@
 | Purpose : Read a JPEG file and extract text chunks.
 | Author  : Martin Rizzo | <martinrizzo@gmail.com>
 | Date    : Oct 5, 2026
-| Repo    : https://github.com/martin-rizzo/ReadPrompt
+| Repo    : https://github.com/martin-rizzo/PromptExtractor
 | License : MIT
 |- - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
-|                                ReadPrompt
+|                              PromptExtractor
 | A lightweight CLI tool to extract embedded prompts from AI-generated images.
 \_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _*/
 #include <stdio.h>
@@ -43,7 +43,7 @@ bool has_jpeg_signature(FILE *file) {
     long initial_pos = ftell(file);
     if (initial_pos == -1L) { return false; } // El flujo no soporta posicionamiento (ej. stdin)
 
-    RpBYTE header[4];
+    PeBYTE header[4];
     size_t bytes_read = fread(header, 1, 4, file);
 
     // Restauramos el puntero del archivo a su estado original
@@ -119,7 +119,7 @@ APP1_FORMAT _read_app1_format( FILE * file ) {
     static const char EXTENDED_XMP_ID[]   = "http://adobe.com\x00";
     static size_t     EXTENDED_XMP_IDSIZE = 17;
 
-    RpBYTE app1_formatid[6];
+    PeBYTE app1_formatid[6];
     size_t bytes_to_skip = 0;
     size_t bytes_to_compare = sizeof(app1_formatid);
     APP1_FORMAT app1_format = APP1_FORMAT_UNKNOWN;
@@ -156,9 +156,9 @@ bool _search_tiff_dir( int  *out_offset,
                        int   is_intel,
                        int   seek_offset )
 {
-    static const int ENTRY_SIZE = 12; RpBYTE dir_buffer[ 48 ];
+    static const int ENTRY_SIZE = 12; PeBYTE dir_buffer[ 48 ];
     const int max_entry_count = sizeof(dir_buffer) / ENTRY_SIZE;
-    RpBYTE* ptr; int tag, total_entries;
+    PeBYTE* ptr; int tag, total_entries;
     size_t entry_count;
     
     if( seek_offset>=0 && fseek(file, seek_offset, SEEK_SET)!=0 ) {
@@ -190,18 +190,18 @@ bool _search_tiff_dir( int  *out_offset,
 
 
 static
-RpEmbStrings* _read_exif_user_comment( FILE *file ) {
-    static const RpBYTE IntelHeader[4]    = { 0x49, 0x49, 0x2A, 0x00 };
-    static const RpBYTE MotorolaHeader[4] = { 0x4D, 0x4D, 0x00, 0x2A };
+PeEmbStrings* _read_exif_user_comment( FILE *file ) {
+    static const PeBYTE IntelHeader[4]    = { 0x49, 0x49, 0x2A, 0x00 };
+    static const PeBYTE MotorolaHeader[4] = { 0x4D, 0x4D, 0x00, 0x2A };
     static const int TAG_EXIF_OFFSET  = 0x8769;
     static const int TAG_USER_COMMENT = 0x9286;
     static const int CHAR_CODE_SIZE   = 8; // char code designation = 8 bytes
 
     const long tiff_start = ftell( file );
 
-    RpBYTE  header_and_offset[8];
-    RpBYTE* header_data = &header_and_offset[0];
-    RpBYTE* offset_data = &header_and_offset[4];
+    PeBYTE  header_and_offset[8];
+    PeBYTE* header_data = &header_and_offset[0];
+    PeBYTE* offset_data = &header_and_offset[4];
 
     bool is_intel;
     // int ifd0_offset, exif_offset, usercomment_offset, count, read_size;
@@ -239,13 +239,13 @@ RpEmbStrings* _read_exif_user_comment( FILE *file ) {
         char* usercomment = calloc( 1, usercomment_size+4 );
         fseek( file, tiff_start + usercomment_offset + CHAR_CODE_SIZE, SEEK_SET );
         fread( usercomment, usercomment_size, 1, file );
-        RP_ENCODING encoding = rp_detect_encoding(usercomment, usercomment_size);
+        PE_ENCODING encoding = pe_detect_encoding(usercomment, usercomment_size);
 
-        RpNamedStr* namedstr_chain = rp_attach_namedstr(
-                                        rp_strdup_utf8("user_comment", 0, RP_ENCODING_ASCII),
-                                        rp_strdup_utf8(usercomment, usercomment_size, encoding),
+        PeNamedStr* namedstr_chain = pe_attach_namedstr(
+                                        pe_strdup_utf8("user_comment", 0, PE_ENCODING_ASCII),
+                                        pe_strdup_utf8(usercomment, usercomment_size, encoding),
                                         NULL);
-        RpEmbStrings* embstrings = rp_attach_embstrings( namedstr_chain );
+        PeEmbStrings* embstrings = pe_attach_embstrings( namedstr_chain );
 
         free( usercomment );
         return embstrings;
@@ -262,7 +262,7 @@ RpEmbStrings* _read_exif_user_comment( FILE *file ) {
 |  ////////////////////////// PUBLIC FUNCTIONS ///////////////////////////  | 
 ===========================================================================*/
 
-RpEmbStrings* rp_embstrings_from_jpeg( FILE* file ) {
+PeEmbStrings* pe_embstrings_from_jpeg( FILE* file ) {
     enum  {
         MARKER_SOI          = 0xFFD8,
         MARKER_EOI          = 0xFFD9,

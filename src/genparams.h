@@ -7,12 +7,12 @@
 
 struct GenParams {
 
-    const RpUTF8* prompt;
-    const RpUTF8* negative_prompt;
+    const PeUTF8* prompt;
+    const PeUTF8* negative_prompt;
     int           steps;
     int           seed;
     float         cfg;
-    const RpBYTE* _data[1];
+    const PeBYTE* _data[1];
 
 };
 typedef struct GenParams GenParams;
@@ -29,7 +29,7 @@ enum REPORT_TYPE {
 typedef enum REPORT_TYPE REPORT_TYPE;
 
 
-typedef void (ReportFn)(REPORT_TYPE type, const RpUTF8* message);
+typedef void (ReportFn)(REPORT_TYPE type, const PeUTF8* message);
 
 
 const GenParams* read_genparams(const char* filename,

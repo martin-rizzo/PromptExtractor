@@ -5,7 +5,7 @@ CC         = gcc
 CFLAGS     = -std=c99 -pedantic -Wall -Wextra -Wunused-function -Isrc -Isrc/image_fmt -Ideps -g
 LDFLAGS    = 
 TARGET_DIR = bin
-TARGET     = $(TARGET_DIR)/readprompt
+TARGET     = $(TARGET_DIR)/promptex
 HEADERS    = $(wildcard src/*.h) $(wildcard src/image_fmt/*.h)
 SRCS       = $(wildcard src/*.c) $(wildcard src/image_fmt/*.c)
 OBJS       = $(SRCS:.c=.o)

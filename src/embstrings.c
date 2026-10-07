@@ -3,17 +3,17 @@
 | Purpose : Manage embedded strings and named strings.
 | Author  : Martin Rizzo | <martinrizzo@gmail.com>
 | Date    : Oct 4, 2026
-| Repo    : https://github.com/martin-rizzo/ReadPrompt
+| Repo    : https://github.com/martin-rizzo/PromptExtractor
 | License : MIT
 |- - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
-|                                ReadPrompt
+|                              PromptExtractor
 | A lightweight CLI tool to extract embedded prompts from AI-generated images.
 \_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _*/
 #include <stdlib.h>
 #include <stdbool.h>
 #include <string.h>
 #include "embstrings.h"
-#define NamedStrPointer RpNamedStr*
+#define NamedStrPointer PeNamedStr*
 
 /**
  * Extracts a 16-bit UTF-16 code unit from a byte buffer at a specified index.
@@ -23,7 +23,7 @@
  * the `is_little_endian` parameter.
  *
  * @param buf   Pointer to the source byte buffer. Must be an unsigned integer
- *              type (e.g., `unsigned char`, `uint8_t`, or `RpBYTE`).
+ *              type (e.g., `unsigned char`, `uint8_t`, or `PeBYTE`).
  * @param idx   The byte offset within the buffer where the code unit begins.
  * @param is_little_endian Boolean flag specifying the byte order:
  *                          - `0` (false): Big-endian format.
@@ -52,24 +52,24 @@
  *         invalid (e.g., in the surrogate range or greater than 0x10FFFF).
  */
 static
-size_t _codepoint_to_utf8(unsigned int codept, RpUTF8 *out) {
+size_t _codepoint_to_utf8(unsigned int codept, PeUTF8 *out) {
     if (codept <= 0x7F) {
-        out[0] = (RpUTF8)codept;
+        out[0] = (PeUTF8)codept;
         return 1;
     } else if (codept <= 0x7FF) {
-        out[0] = (RpUTF8)(((codept >>  6)       ) | 0xC0);
-        out[1] = (RpUTF8)(((codept      ) & 0x3F) | 0x80);
+        out[0] = (PeUTF8)(((codept >>  6)       ) | 0xC0);
+        out[1] = (PeUTF8)(((codept      ) & 0x3F) | 0x80);
         return 2;
     } else if (codept <= 0xD7FF || (codept >= 0xE000 && codept <= 0xFFFF)) {
-        out[0] = (RpUTF8)(((codept >> 12)       ) | 0xE0);
-        out[1] = (RpUTF8)(((codept >>  6) & 0x3F) | 0x80);
-        out[2] = (RpUTF8)(((codept      ) & 0x3F) | 0x80);
+        out[0] = (PeUTF8)(((codept >> 12)       ) | 0xE0);
+        out[1] = (PeUTF8)(((codept >>  6) & 0x3F) | 0x80);
+        out[2] = (PeUTF8)(((codept      ) & 0x3F) | 0x80);
         return 3;
     } else if (codept >= 0x10000 && codept <= 0x10FFFF) {
-        out[0] = (RpUTF8)(((codept >> 18)       ) | 0xF0);
-        out[1] = (RpUTF8)(((codept >> 12) & 0x3F) | 0x80);
-        out[2] = (RpUTF8)(((codept >>  6) & 0x3F) | 0x80);
-        out[3] = (RpUTF8)(((codept      ) & 0x3F) | 0x80);
+        out[0] = (PeUTF8)(((codept >> 18)       ) | 0xF0);
+        out[1] = (PeUTF8)(((codept >> 12) & 0x3F) | 0x80);
+        out[2] = (PeUTF8)(((codept >>  6) & 0x3F) | 0x80);
+        out[3] = (PeUTF8)(((codept      ) & 0x3F) | 0x80);
         return 4;
     }
     // outside the valid Unicode range / isolated surrogates
@@ -78,17 +78,17 @@ size_t _codepoint_to_utf8(unsigned int codept, RpUTF8 *out) {
 
 
 // Converts a source character buffer into a newly allocated UTF-8 string.
-RpUTF8 *rp_strdup_utf8(const void* buffer, size_t bufsize, RP_ENCODING bufencoding) {
+PeUTF8 *pe_strdup_utf8(const void* buffer, size_t bufsize, PE_ENCODING bufencoding) {
     if (!buffer) { return NULL; }
-    const RpBYTE* src = (const RpBYTE *)buffer;
-    RpUTF8* result = NULL;
+    const PeBYTE* src = (const PeBYTE *)buffer;
+    PeUTF8* result = NULL;
 
     switch (bufencoding) {
 
         //-----------------------------------------------------------
         // if the buffer is already in UTF-8 (or ASCII), simply copy it
-        case RP_ENCODING_ASCII:
-        case RP_ENCODING_UTF8:
+        case PE_ENCODING_ASCII:
+        case PE_ENCODING_UTF8:
             // if bufsize is not specified,
             // use the length of the string
             if (bufsize==0) { bufsize = strlen((const char *)buffer); }
@@ -102,8 +102,8 @@ RpUTF8 *rp_strdup_utf8(const void* buffer, size_t bufsize, RP_ENCODING bufencodi
             
         //-----------------------------------------------------------
         // UTF-16 buffers require character-by-character conversion
-        case RP_ENCODING_UTF16LE:
-        case RP_ENCODING_UTF16BE:
+        case PE_ENCODING_UTF16LE:
+        case PE_ENCODING_UTF16BE:
             // if bufsize is not specified,
             // search for the null terminator (0x00 0x00)
             if (bufsize == 0) {
@@ -119,11 +119,11 @@ RpUTF8 *rp_strdup_utf8(const void* buffer, size_t bufsize, RP_ENCODING bufencodi
             size_t i = 0;      // Read index in bytes for the source buffer
             size_t out_idx = 0; // Write index for the result buffer
             while (i < bufsize) {
-                unsigned codept = GET_UTF16(src,i,bufencoding==RP_ENCODING_UTF16LE);
+                unsigned codept = GET_UTF16(src,i,bufencoding==PE_ENCODING_UTF16LE);
                 i += 2;
                 // surrogate pair codepoint correction
                 if (codept >= 0xD800 && codept <= 0xDBFF && i < bufsize ) {
-                    unsigned low = GET_UTF16(src,i,bufencoding==RP_ENCODING_UTF16LE);
+                    unsigned low = GET_UTF16(src,i,bufencoding==PE_ENCODING_UTF16LE);
                     if (low >= 0xDC00 && low <= 0xDFFF) {
                         codept = 0x10000 + (((codept - 0xD800) << 10) | (low - 0xDC00));
                         i += 2; // Consume the second 16-bit word
@@ -139,7 +139,7 @@ RpUTF8 *rp_strdup_utf8(const void* buffer, size_t bufsize, RP_ENCODING bufencodi
             result[out_idx++] = '\0'; 
 
             // adjust memory block to actual used size and return
-            RpUTF8 *shrunk = realloc(result, out_idx);
+            PeUTF8 *shrunk = realloc(result, out_idx);
             return shrunk ? shrunk : result;
 
 
@@ -155,17 +155,17 @@ RpUTF8 *rp_strdup_utf8(const void* buffer, size_t bufsize, RP_ENCODING bufencodi
 
 
 // Detects the encoding of a string.
-RP_ENCODING rp_detect_encoding(const void *buffer, size_t buffer_size) {
-    if (!buffer || buffer_size <= 0) { return RP_ENCODING_UNKNOWN; }
+PE_ENCODING pe_detect_encoding(const void *buffer, size_t buffer_size) {
+    if (!buffer || buffer_size <= 0) { return PE_ENCODING_UNKNOWN; }
     const unsigned char * const buf = (const unsigned char *)buffer;
     
     // check for byte order mark (BOM)
     if (buffer_size >= 2) {
-        if (buf[0] == 0xFE && buf[1] == 0xFF) { return RP_ENCODING_UTF16BE; }
-        if (buf[0] == 0xFF && buf[1] == 0xFE) { return RP_ENCODING_UTF16LE; }
+        if (buf[0] == 0xFE && buf[1] == 0xFF) { return PE_ENCODING_UTF16BE; }
+        if (buf[0] == 0xFF && buf[1] == 0xFE) { return PE_ENCODING_UTF16LE; }
     }
     if (buffer_size >= 3 && buf[0] == 0xEF && buf[1] == 0xBB && buf[2] == 0xBF) {
-        return RP_ENCODING_UTF8;
+        return PE_ENCODING_UTF8;
     }
 
     // check for UTF-16 heuristic (interleaved null bytes) 
@@ -185,31 +185,31 @@ RP_ENCODING rp_detect_encoding(const void *buffer, size_t buffer_size) {
     // or odd position) since the loop above can stop during two consecutive
     // nulls. (hence the following check uses <=1)
     if (null_even<=1 && null_odd<=1 ) {
-        return has_non_ascii ? RP_ENCODING_UTF8 : RP_ENCODING_ASCII;
+        return has_non_ascii ? PE_ENCODING_UTF8 : PE_ENCODING_ASCII;
     }
 
     // at this point, we are in UTF-16 territory (with multiple nulls)
-    return null_even > null_odd ? RP_ENCODING_UTF16BE : RP_ENCODING_UTF16LE;
+    return null_even > null_odd ? PE_ENCODING_UTF16BE : PE_ENCODING_UTF16LE;
 }
 
 
 /*============================ NamedStr STRUCT ============================*/
 
-// Creates a new RpNamedStr structure with copies of the provided name and value.
-RpNamedStr* rp_create_namedstr(const RpUTF8* name,
-                               const RpUTF8* value,
-                               RpNamedStr*   chain)
+// Creates a new PeNamedStr structure with copies of the provided name and value.
+PeNamedStr* pe_create_namedstr(const PeUTF8* name,
+                               const PeUTF8* value,
+                               PeNamedStr*   chain)
 {
-    return rp_attach_namedstr(strdup(name), strdup(value), chain);
+    return pe_attach_namedstr(strdup(name), strdup(value), chain);
 }
 
 
-// Creates a new RpNamedStr that takes ownership of the provided name and value.
-RpNamedStr* rp_attach_namedstr(const RpUTF8* name_in_heap,
-                               const RpUTF8* value_in_heap,
-                               RpNamedStr*   chain)
+// Creates a new PeNamedStr that takes ownership of the provided name and value.
+PeNamedStr* pe_attach_namedstr(const PeUTF8* name_in_heap,
+                               const PeUTF8* value_in_heap,
+                               PeNamedStr*   chain)
 {
-    RpNamedStr* namedstr = malloc(sizeof(RpNamedStr));
+    PeNamedStr* namedstr = malloc(sizeof(PeNamedStr));
     namedstr->name  = name_in_heap;
     namedstr->value = value_in_heap;
     namedstr->_next = chain;
@@ -217,11 +217,11 @@ RpNamedStr* rp_attach_namedstr(const RpUTF8* name_in_heap,
 }
 
 
-// Destroys a single RpNamedStr node and frees its associated resources.
-const RpNamedStr* rp_destroy_namedstr(const RpNamedStr* namedstr)
+// Destroys a single PeNamedStr node and frees its associated resources.
+const PeNamedStr* pe_destroy_namedstr(const PeNamedStr* namedstr)
 {
     if( !namedstr ) { return NULL; }
-    RpNamedStr* next_in_chain = namedstr->_next;
+    PeNamedStr* next_in_chain = namedstr->_next;
     free( (void*)namedstr->name  );
     free( (void*)namedstr->value );
     free( (void*)namedstr );
@@ -229,22 +229,22 @@ const RpNamedStr* rp_destroy_namedstr(const RpNamedStr* namedstr)
 }
 
 
-// Destroys an entire chain of RpNamedStr nodes.
-void rp_destroy_namedstr_chain(const RpNamedStr* namedstr)
+// Destroys an entire chain of PeNamedStr nodes.
+void pe_destroy_namedstr_chain(const PeNamedStr* namedstr)
 {
     while (namedstr!=NULL) {
-        namedstr = rp_destroy_namedstr(namedstr);
+        namedstr = pe_destroy_namedstr(namedstr);
     }
 }
 
 
-/*========================== RpEmbStrings STRUCT ==========================*/
+/*========================== PeEmbStrings STRUCT ==========================*/
 
-// Creates a new RpEmbStrings structure taking ownership of the string chain.
-RpEmbStrings* rp_attach_embstrings(RpNamedStr* chain_in_heap)
+// Creates a new PeEmbStrings structure taking ownership of the string chain.
+PeEmbStrings* pe_attach_embstrings(PeNamedStr* chain_in_heap)
 {
-    RpNamedStr* current;
-    RpEmbStrings* embstrings = malloc(sizeof(RpEmbStrings));
+    PeNamedStr* current;
+    PeEmbStrings* embstrings = malloc(sizeof(PeEmbStrings));
 
     // count the number of elements in the chain
     current = chain_in_heap;
@@ -253,7 +253,7 @@ RpEmbStrings* rp_attach_embstrings(RpNamedStr* chain_in_heap)
         current = current->_next;
     }
 
-    // initialize RpEmbStrings and allocate space for 'items' to hold all chain elements
+    // initialize PeEmbStrings and allocate space for 'items' to hold all chain elements
     embstrings->items  = malloc(sizeof(NamedStrPointer) * count);
     embstrings->count  = count;
     embstrings->_chain = chain_in_heap;
@@ -269,13 +269,13 @@ RpEmbStrings* rp_attach_embstrings(RpNamedStr* chain_in_heap)
 }
 
 
-// Destroys an RpEmbStrings structure and frees its associated resources.
-void rp_destroy_embstrings(const RpEmbStrings* embstrings)
+// Destroys a PeEmbStrings structure and frees its associated resources.
+void pe_destroy_embstrings(const PeEmbStrings* embstrings)
 {
     if( !embstrings ) { return; }
     
-    // free the array of pointers and the RpEmbStrings itself
-    rp_destroy_namedstr_chain(embstrings->_chain);
+    // free the array of pointers and the PeEmbStrings itself
+    pe_destroy_namedstr_chain(embstrings->_chain);
     free((void*)embstrings->items);
     free((void*)embstrings);
 }

@@ -3,10 +3,10 @@
 | Purpose : Read a PNG file and extract embedded text chunks.
 | Author  : Martin Rizzo | <martinrizzo@gmail.com>
 | Date    : Oct 4, 2026
-| Repo    : https://github.com/martin-rizzo/ReadPrompt
+| Repo    : https://github.com/martin-rizzo/PromptExtractor
 | License : MIT
 |- - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
-|                                ReadPrompt
+|                              PromptExtractor
 | A lightweight CLI tool to extract embedded prompts from AI-generated images.
 \_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _*/
 
@@ -31,7 +31,7 @@
  * @return
  *     A pointer to the loaded text chunk, or NULL on error.
  */
-static RpUTF8*
+static PeUTF8*
 load_text_chunk(size_t chunk_size, size_t min_allocation, size_t max_allocation, FILE* file) {
 
     // by default, the number of bytes to allocate and the number of
@@ -49,8 +49,8 @@ load_text_chunk(size_t chunk_size, size_t min_allocation, size_t max_allocation,
         bytes_to_request = bytes_to_alloc;
     }
 
-    RpUTF8* text_chunk = (RpUTF8*)calloc(1, bytes_to_alloc + SAFE_BYTES);
-    size_t  bytes_read = fread(text_chunk, sizeof(RpBYTE), bytes_to_request, file);
+    PeUTF8* text_chunk = (PeUTF8*)calloc(1, bytes_to_alloc + SAFE_BYTES);
+    size_t  bytes_read = fread(text_chunk, sizeof(PeBYTE), bytes_to_request, file);
 
     // if for some reason not all requested bytes could be read,
     // return NULL (error!)
@@ -81,8 +81,8 @@ load_text_chunk(size_t chunk_size, size_t min_allocation, size_t max_allocation,
  */
 static
 bool has_png_signature( FILE *file ) {
-    static const RpBYTE SIGNATURE[] = {137, 80, 78, 71, 13, 10, 26, 10};
-    RpBYTE buffer[sizeof(SIGNATURE)];
+    static const PeBYTE SIGNATURE[] = {137, 80, 78, 71, 13, 10, 26, 10};
+    PeBYTE buffer[sizeof(SIGNATURE)];
 
     // store the current position of the file
     const long initial_pos = ftell(file);
@@ -104,13 +104,13 @@ bool has_png_signature( FILE *file ) {
 /**
  * Loads all text chunks from a PNG file.
  */
-RpEmbStrings* rp_embstrings_from_png( FILE *file )
+PeEmbStrings* pe_embstrings_from_png( FILE *file )
 {
     #define CHUNK_HEADER_SIZE 8 /* CHUNK_LENGTH + CHUNK_TYPE */
     #define CHUNK_CRC_SIZE    4
     bool   text_found, end_of_file;
-    RpBYTE chunk_header[CHUNK_HEADER_SIZE];
-    RpBYTE *chunk_type; RpUTF8* candidate_chunk;
+    PeBYTE chunk_header[CHUNK_HEADER_SIZE];
+    PeBYTE *chunk_type; PeUTF8* candidate_chunk;
     unsigned chunk_size;
     //int idx, i;
     size_t bytes_read;
@@ -120,7 +120,7 @@ RpEmbStrings* rp_embstrings_from_png( FILE *file )
 
     if( !has_png_signature(file) ) { return NULL; }
 
-    RpNamedStr* namedstr_chain = NULL;
+    PeNamedStr* namedstr_chain = NULL;
     end_of_file = false;
     while( !end_of_file  )
     {
@@ -155,7 +155,7 @@ RpEmbStrings* rp_embstrings_from_png( FILE *file )
         // mantener este codigo comentado, sera implementado en un futuro
         // idx = find_chunk_index( candidate_chunk, keys, num_keys );
 
-        namedstr_chain = rp_create_namedstr(
+        namedstr_chain = pe_create_namedstr(
             candidate_chunk,
             candidate_chunk + strlen(candidate_chunk) + 1,
             namedstr_chain);
@@ -163,7 +163,7 @@ RpEmbStrings* rp_embstrings_from_png( FILE *file )
         free( candidate_chunk );
     }
 
-    return namedstr_chain ? rp_attach_embstrings( namedstr_chain ) : NULL;
+    return namedstr_chain ? pe_attach_embstrings( namedstr_chain ) : NULL;
 }
 
 
