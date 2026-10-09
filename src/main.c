@@ -13,11 +13,11 @@
 #include <stdio.h>
 #include <string.h>
 #include <stdbool.h>
-#include "genparams.h"
-#include "embstrings.h"
+#include "params.h"
 #include "image_fmt/png.h"
 #include "image_fmt/jpeg.h"
-typedef PeUTF8* PeStringPtr;
+typedef PeUTF8*       StringPtr;
+typedef const PeUTF8* ConstStringPtr;
 #define VERSION_MAJOR 0
 #define VERSION_MINOR 0
 #define OPT_EQ(arg,opt,long_opt) (strcmp(arg,(opt)) == 0 || strcmp(arg,(long_opt)) == 0)
@@ -95,7 +95,8 @@ void set_color_theme(int index) {
  *             (argv[0]) should contain the name of the executable.
  * @return The exit code that should be returned by the command (0 == success)
  */
-int print_help(PeStringPtr argv[]) {
+int print_help(int argc, char* argv[]) {
+    PE_UNUSED(argc);
     printf(HELP, argv[0], argv[0]);
     return 0;
 }
@@ -113,16 +114,16 @@ int print_version(void) {
     return 0;
 }
 
-void print_report(REPORT_TYPE type, const PeUTF8* message) {
+void print_report(PEREPORT_TYPE type, const PeUTF8* message) {
     switch( type ) {
-        case REPORT_WARNING:
-            printf("WARNING: %s\n", message);
+        case PEREPORT_WARNING:
+            fprintf(stderr, "WARNING: %s\n", message);
             break;
-        case REPORT_ERROR:
-            printf("ERROR: %s\n", message);
+        case PEREPORT_ERROR:
+            fprintf(stderr, "ERROR: %s\n", message);
             break;
         default:
-            printf("%s\n", message);
+            fprintf(stderr, "%s\n", message);
             break;
     }
 }
@@ -134,36 +135,25 @@ void print_report(REPORT_TYPE type, const PeUTF8* message) {
 /**
  * Prints the prompts embedded in multiple image files.
  *
- * @param file_count The number of files in the filenames array.
- * @param filenames  An array of strings where each element is a filepath of an image.
+ * @param filepaths  An array of strings where each element is a filepath of an image.
+ * @param count      The number of files in the filepaths array.
  * @return The exit code that should be returned by the command (0 == success)
  */
 static
-int print_all_prompts(int file_count, PeUTF8* filepaths[]) {
+int print_all_prompts(ConstStringPtr filepaths[], int count) {
 
-    // loop through each filename and print it to the console
-    for( int fidx=0 ; fidx < file_count ; ++fidx ) {
-        const PeUTF8* filepath = filepaths[fidx];
-
-        FILE* file = fopen(filepath, "r");
-        if( file )
-        {
-            PeEmbStrings* embstrings = NULL;
-            if (!embstrings) { embstrings = pe_embstrings_from_png(file);  }
-            if (!embstrings) { embstrings = pe_embstrings_from_jpeg(file); }
-            if (embstrings) {
-                printf("##>> %s\n", filepath);
-                for (int i=0; i<embstrings->count; ++i) {
-                    printf("%s: %.60s\n", embstrings->items[i]->name, embstrings->items[i]->value);
-                }
-                pe_destroy_embstrings(embstrings);
-            }
+    // loop through each file and print it to the console
+    for( int fidx=0 ; fidx < count ; ++fidx )
+    {
+        ConstStringPtr  path   = filepaths[fidx];
+        const PeParams* params = pe_params_from_path(path, print_report);
+        for (int i=0; i<params->file.texts_count; ++i) {
+            printf("##>> %s: %.60s\n",
+                params->file.texts[i].name,
+                params->file.texts[i].value
+            );
         }
-        if( file ) { fclose(file); }
-
-        //const GenParams* genparams = read_genparams(filepaths[i], print_report);
-        //printf("##>> Prompt: '%s'", genparams->prompt);
-        //free_genparams( genparams );
+        pe_destroy_params(params);
     }
     return 0;
 }
@@ -191,7 +181,7 @@ int main(int argc, char* argv[])
     bool show_help         = false; // flag to indicate if help should be shown.   
     bool show_version      = false; // flag to indicate if version should be shown.
     int  color_theme       = 1;     // color theme to use (default = colorful).    
-    PeStringPtr *filenames = malloc(sizeof(PeStringPtr) * argc);
+    ConstStringPtr *filenames = malloc(sizeof(ConstStringPtr) * argc);
     int error = 0;                // Error code returned by the program.
     int i, file_count;            // Loop index and count of filenames.  
     set_color_theme(0);
@@ -223,8 +213,8 @@ int main(int argc, char* argv[])
     // execute the command based on parsed options
     if( !error ) { 
         if     ( show_version ) { error = print_version();  }
-        else if( show_help    ) { error = print_help(argv); }
-        else                    { error = print_all_prompts(file_count,filenames); }
+        else if( show_help    ) { error = print_help(argc,argv); }
+        else                    { error = print_all_prompts(filenames,file_count); }
     }
 
     // free the allocated memory for filenames

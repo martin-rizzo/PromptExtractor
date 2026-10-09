@@ -14,7 +14,7 @@
 #include <stdbool.h>
 #include <string.h>
 #include "types.h"
-#include "embstrings.h"
+#include "textchunk.h"
 #include "jpeg.h"
 #define JPEG_ERROR (-1)
 
@@ -190,7 +190,7 @@ bool _search_tiff_dir( int  *out_offset,
 
 
 static
-PeEmbStrings* _read_exif_user_comment( FILE *file ) {
+PeTextChunk* _read_exif_user_comment( FILE *file ) {
     static const PeBYTE IntelHeader[4]    = { 0x49, 0x49, 0x2A, 0x00 };
     static const PeBYTE MotorolaHeader[4] = { 0x4D, 0x4D, 0x00, 0x2A };
     static const int TAG_EXIF_OFFSET  = 0x8769;
@@ -219,9 +219,6 @@ PeEmbStrings* _read_exif_user_comment( FILE *file ) {
 
     size_t ifd0_offset = GET_DWORD( offset_data, is_intel );
 
-    printf("##>> is_intel:%d, ifd0_offset:%lu\n", is_intel, ifd0_offset);
-
-
     /* find UserComment */
     int exif_offset, usercomment_offset, count, usercomment_size;
     if( !_search_tiff_dir( &exif_offset, &count, TAG_EXIF_OFFSET,
@@ -241,14 +238,13 @@ PeEmbStrings* _read_exif_user_comment( FILE *file ) {
         fread( usercomment, usercomment_size, 1, file );
         PE_ENCODING encoding = pe_detect_encoding(usercomment, usercomment_size);
 
-        PeNamedStr* namedstr_chain = pe_attach_namedstr(
-                                        pe_strdup_utf8("user_comment", 0, PE_ENCODING_ASCII),
-                                        pe_strdup_utf8(usercomment, usercomment_size, encoding),
-                                        NULL);
-        PeEmbStrings* embstrings = pe_attach_embstrings( namedstr_chain );
-
+        PeTextChunk* textchunk = pe_attach_textchunk(
+                                    pe_strdup_utf8("USER_COMMENT", 0, PE_ENCODING_ASCII),
+                                    pe_strdup_utf8("User Comment", 0, PE_ENCODING_ASCII),
+                                    pe_strdup_utf8(usercomment, usercomment_size, encoding),
+                                    NULL);
         free( usercomment );
-        return embstrings;
+        return textchunk;
     }
 
 
@@ -262,7 +258,10 @@ PeEmbStrings* _read_exif_user_comment( FILE *file ) {
 |  ////////////////////////// PUBLIC FUNCTIONS ///////////////////////////  | 
 ===========================================================================*/
 
-PeEmbStrings* pe_embstrings_from_jpeg( FILE* file ) {
+PeTextChunk* pe_textchunk_chain_from_jpeg(FILE*      file,
+                                          PeReportFn report
+){
+    PE_UNUSED(report);
     enum  {
         MARKER_SOI          = 0xFFD8,
         MARKER_EOI          = 0xFFD9,
@@ -280,7 +279,6 @@ PeEmbStrings* pe_embstrings_from_jpeg( FILE* file ) {
     // identificandolos mediante su 'marker'
     marker = 0; while( marker!=JPEG_ERROR && marker!=MARKER_EOI ) {
         marker = _read_jpg_marker( file );
-        printf("Marker 0x%X\n", marker);
         switch( marker ) {
             
             // el segmento `APP1` es donde la mayoria de las apps 

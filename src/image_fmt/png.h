@@ -12,10 +12,10 @@
 #ifndef PE__PNG_H__
 #define PE__PNG_H__
 #include <stdio.h>
-#include "embstrings.h"
+#include "textchunk.h"
 
 
-PeEmbStrings* pe_embstrings_from_png( FILE *file );
+PeTextChunk* pe_textchunk_chain_from_png(FILE *file, PeReportFn report);
 
 
 

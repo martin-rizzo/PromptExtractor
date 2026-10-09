@@ -15,7 +15,7 @@
 #include <string.h>
 #include <stdio.h>
 #include "types.h"
-#include "embstrings.h"
+#include "textchunk.h"
 #include "png.h"
 #define SAFE_BYTES 4  ///< bytes to pad to '\0' for security in strings
 
@@ -101,11 +101,10 @@ bool has_png_signature( FILE *file ) {
 |  ////////////////////////// PUBLIC FUNCTIONS ///////////////////////////  | 
 ===========================================================================*/
 
-/**
- * Loads all text chunks from a PNG file.
- */
-PeEmbStrings* pe_embstrings_from_png( FILE *file )
-{
+PeTextChunk* pe_textchunk_chain_from_png(FILE *     file,
+                                         PeReportFn report
+){
+    PE_UNUSED(report);
     #define CHUNK_HEADER_SIZE 8 /* CHUNK_LENGTH + CHUNK_TYPE */
     #define CHUNK_CRC_SIZE    4
     bool   text_found, end_of_file;
@@ -120,17 +119,17 @@ PeEmbStrings* pe_embstrings_from_png( FILE *file )
 
     if( !has_png_signature(file) ) { return NULL; }
 
-    PeNamedStr* namedstr_chain = NULL;
+    PeTextChunk* textchunk_chain = NULL;
     end_of_file = false;
     while( !end_of_file  )
     {
-        /* intenta leer el header del chunk */
+        // intenta leer el header del chunk
         bytes_read = fread( chunk_header, 1, sizeof(chunk_header), file );
         if( bytes_read!=sizeof(chunk_header) ) {
             end_of_file=true; continue;
         }
 
-        /* calcula el tama~nio y tipo del chunk */
+        // calcula el tama~nio y tipo del chunk
         chunk_size = (chunk_header[0] << 24) |
                      (chunk_header[1] << 16) |
                      (chunk_header[2] <<  8) |
@@ -138,32 +137,33 @@ PeEmbStrings* pe_embstrings_from_png( FILE *file )
         chunk_type = &chunk_header[4];
         text_found = memcmp(chunk_type,"tEXt",4)==0;
 
-        /* si no es un "tEXt" chunk, saltamos al siguiente */
+        // si no es un "tEXt" chunk, saltamos al siguiente
         if( !text_found ) {
             fseek( file, chunk_size+CHUNK_CRC_SIZE, SEEK_CUR );
             continue;
         }
 
-        /* intenta cargar el chunk de texto */
-        /* si no se pudo cargar ningun chuck, el archivo termino o hubo error */
+        // intenta cargar el chunk de texto
+        // si no se pudo cargar ningun chuck, el archivo termino o hubo error
         candidate_chunk = load_text_chunk( chunk_size, 0, 0, file );
         fseek( file, CHUNK_CRC_SIZE, SEEK_CUR );
         if( !candidate_chunk ) {
             end_of_file=true; continue;
         }
 
-        // mantener este codigo comentado, sera implementado en un futuro
-        // idx = find_chunk_index( candidate_chunk, keys, num_keys );
+        // deberia convertir el 'candidate_chunk' todo a mayusculas + numeros y reemplazar cualquier signo raro con '_' (underscore)
+        const char* candidate_chunk_id = candidate_chunk;
 
-        namedstr_chain = pe_create_namedstr(
+        textchunk_chain = pe_create_textchunk(
+            candidate_chunk_id,
             candidate_chunk,
             candidate_chunk + strlen(candidate_chunk) + 1,
-            namedstr_chain);
+            textchunk_chain);
 
         free( candidate_chunk );
     }
 
-    return namedstr_chain ? pe_attach_embstrings( namedstr_chain ) : NULL;
+    return textchunk_chain;
 }
 
 

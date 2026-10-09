@@ -12,10 +12,10 @@
 #ifndef PE__JPEG_H__
 #define PE__JPEG_H__
 #include <stdio.h>
-#include "embstrings.h"
+#include "textchunk.h"
 
 
-PeEmbStrings* pe_embstrings_from_jpeg( FILE* file );
+PeTextChunk* pe_textchunk_chain_from_jpeg(FILE* file, PeReportFn report);
 
 
 #endif /*PE__JPEG_H__*/

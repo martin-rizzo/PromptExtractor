@@ -1,8 +1,8 @@
 /*
-| File    : embstrings.c
-| Purpose : Manage embedded strings and named strings.
+| File    : types.c
+| Purpose : Simple types used in the project.
 | Author  : Martin Rizzo | <martinrizzo@gmail.com>
-| Date    : Oct 4, 2026
+| Date    : Oct 2, 2026
 | Repo    : https://github.com/martin-rizzo/PromptExtractor
 | License : MIT
 |- - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
@@ -12,8 +12,7 @@
 #include <stdlib.h>
 #include <stdbool.h>
 #include <string.h>
-#include "embstrings.h"
-#define NamedStrPointer PeNamedStr*
+#include "types.h"
 
 /**
  * Extracts a 16-bit UTF-16 code unit from a byte buffer at a specified index.
@@ -35,8 +34,6 @@
     (is_little_endian) ? (buf[(idx)+0])    | (buf[(idx)+1]<<8)  \
                        : (buf[(idx)+0]<<8) | (buf[(idx)+1]   ) )\
 
-
-/*===================== SIMPLE UTF16/UTF8 CONVERSION ======================*/
 
 /**
  * Converts a Unicode codepoint to its UTF-8 byte representation.
@@ -77,8 +74,52 @@ size_t _codepoint_to_utf8(unsigned int codept, PeUTF8 *out) {
 }
 
 
+// Detects the encoding of a string.
+PE_ENCODING pe_detect_encoding(const void* buffer,
+                               size_t      buffer_size
+){
+    if (!buffer || buffer_size <= 0) { return PE_ENCODING_UNKNOWN; }
+    const unsigned char * const buf = (const unsigned char *)buffer;
+    
+    // check for byte order mark (BOM)
+    if (buffer_size >= 2) {
+        if (buf[0] == 0xFE && buf[1] == 0xFF) { return PE_ENCODING_UTF16BE; }
+        if (buf[0] == 0xFF && buf[1] == 0xFE) { return PE_ENCODING_UTF16LE; }
+    }
+    if (buffer_size >= 3 && buf[0] == 0xEF && buf[1] == 0xBB && buf[2] == 0xBF) {
+        return PE_ENCODING_UTF8;
+    }
+
+    // check for UTF-16 heuristic (interleaved null bytes) 
+    size_t null_even=0, null_odd=0, consecutive_null=0;
+    bool   has_non_ascii = false;
+    for (size_t i = 0; i<buffer_size && consecutive_null<2 ; i++) {
+        if (buf[i] >= 128 ) { has_non_ascii = true; }
+        if (buf[i] == 0 ) {
+            if (i % 2 == 0) { null_even++; } else { null_odd++; }
+            consecutive_null++;
+        } else { 
+            consecutive_null = 0;
+        }
+    }
+
+    // even for ASCII/UTF-8, a 'null' byte might occasionally slip in (even
+    // or odd position) since the loop above can stop during two consecutive
+    // nulls. (hence the following check uses <=1)
+    if (null_even<=1 && null_odd<=1 ) {
+        return has_non_ascii ? PE_ENCODING_UTF8 : PE_ENCODING_ASCII;
+    }
+
+    // at this point, we are in UTF-16 territory (with multiple nulls)
+    return null_even > null_odd ? PE_ENCODING_UTF16BE : PE_ENCODING_UTF16LE;
+}
+
+
 // Converts a source character buffer into a newly allocated UTF-8 string.
-PeUTF8 *pe_strdup_utf8(const void* buffer, size_t bufsize, PE_ENCODING bufencoding) {
+PeUTF8 *pe_strdup_utf8(const void* buffer,
+                       size_t      bufsize,
+                       PE_ENCODING bufencoding
+){
     if (!buffer) { return NULL; }
     const PeBYTE* src = (const PeBYTE *)buffer;
     PeUTF8* result = NULL;
@@ -151,131 +192,4 @@ PeUTF8 *pe_strdup_utf8(const void* buffer, size_t bufsize, PE_ENCODING bufencodi
             return result;
 
     }
-}
-
-
-// Detects the encoding of a string.
-PE_ENCODING pe_detect_encoding(const void *buffer, size_t buffer_size) {
-    if (!buffer || buffer_size <= 0) { return PE_ENCODING_UNKNOWN; }
-    const unsigned char * const buf = (const unsigned char *)buffer;
-    
-    // check for byte order mark (BOM)
-    if (buffer_size >= 2) {
-        if (buf[0] == 0xFE && buf[1] == 0xFF) { return PE_ENCODING_UTF16BE; }
-        if (buf[0] == 0xFF && buf[1] == 0xFE) { return PE_ENCODING_UTF16LE; }
-    }
-    if (buffer_size >= 3 && buf[0] == 0xEF && buf[1] == 0xBB && buf[2] == 0xBF) {
-        return PE_ENCODING_UTF8;
-    }
-
-    // check for UTF-16 heuristic (interleaved null bytes) 
-    size_t null_even=0, null_odd=0, consecutive_null=0;
-    bool   has_non_ascii = false;
-    for (size_t i = 0; i<buffer_size && consecutive_null<2 ; i++) {
-        if (buf[i] >= 128 ) { has_non_ascii = true; }
-        if (buf[i] == 0 ) {
-            if (i % 2 == 0) { null_even++; } else { null_odd++; }
-            consecutive_null++;
-        } else { 
-            consecutive_null = 0;
-        }
-    }
-
-    // even for ASCII/UTF-8, a 'null' byte might occasionally slip in (even
-    // or odd position) since the loop above can stop during two consecutive
-    // nulls. (hence the following check uses <=1)
-    if (null_even<=1 && null_odd<=1 ) {
-        return has_non_ascii ? PE_ENCODING_UTF8 : PE_ENCODING_ASCII;
-    }
-
-    // at this point, we are in UTF-16 territory (with multiple nulls)
-    return null_even > null_odd ? PE_ENCODING_UTF16BE : PE_ENCODING_UTF16LE;
-}
-
-
-/*============================ NamedStr STRUCT ============================*/
-
-// Creates a new PeNamedStr structure with copies of the provided name and value.
-PeNamedStr* pe_create_namedstr(const PeUTF8* name,
-                               const PeUTF8* value,
-                               PeNamedStr*   chain)
-{
-    return pe_attach_namedstr(strdup(name), strdup(value), chain);
-}
-
-
-// Creates a new PeNamedStr that takes ownership of the provided name and value.
-PeNamedStr* pe_attach_namedstr(const PeUTF8* name_in_heap,
-                               const PeUTF8* value_in_heap,
-                               PeNamedStr*   chain)
-{
-    PeNamedStr* namedstr = malloc(sizeof(PeNamedStr));
-    namedstr->name  = name_in_heap;
-    namedstr->value = value_in_heap;
-    namedstr->_next = chain;
-    return namedstr;
-}
-
-
-// Destroys a single PeNamedStr node and frees its associated resources.
-const PeNamedStr* pe_destroy_namedstr(const PeNamedStr* namedstr)
-{
-    if( !namedstr ) { return NULL; }
-    PeNamedStr* next_in_chain = namedstr->_next;
-    free( (void*)namedstr->name  );
-    free( (void*)namedstr->value );
-    free( (void*)namedstr );
-    return next_in_chain;
-}
-
-
-// Destroys an entire chain of PeNamedStr nodes.
-void pe_destroy_namedstr_chain(const PeNamedStr* namedstr)
-{
-    while (namedstr!=NULL) {
-        namedstr = pe_destroy_namedstr(namedstr);
-    }
-}
-
-
-/*========================== PeEmbStrings STRUCT ==========================*/
-
-// Creates a new PeEmbStrings structure taking ownership of the string chain.
-PeEmbStrings* pe_attach_embstrings(PeNamedStr* chain_in_heap)
-{
-    PeNamedStr* current;
-    PeEmbStrings* embstrings = malloc(sizeof(PeEmbStrings));
-
-    // count the number of elements in the chain
-    current = chain_in_heap;
-    int count = 0; while (current != NULL) {
-        count++;
-        current = current->_next;
-    }
-
-    // initialize PeEmbStrings and allocate space for 'items' to hold all chain elements
-    embstrings->items  = malloc(sizeof(NamedStrPointer) * count);
-    embstrings->count  = count;
-    embstrings->_chain = chain_in_heap;
-
-    // populate the 'items' array with each element from the chain
-    current = chain_in_heap;
-    int idx = count; while (current != NULL) {
-        embstrings->items[--idx] = current;
-        current = current->_next;
-    }
-
-    return embstrings;
-}
-
-
-// Destroys a PeEmbStrings structure and frees its associated resources.
-void pe_destroy_embstrings(const PeEmbStrings* embstrings)
-{
-    if( !embstrings ) { return; }
-    
-    // free the array of pointers and the PeEmbStrings itself
-    pe_destroy_namedstr_chain(embstrings->_chain);
-    free((void*)embstrings->items);
-    free((void*)embstrings);
 }
