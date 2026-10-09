@@ -11,26 +11,47 @@
 \_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _*/
 #ifndef PE__TYPES_H__
 #define PE__TYPES_H__
-#ifndef _POSIX_C_SOURCE
-#define strdup(str) pe_strdup_utf8(str,0,PE_ENCODING_UTF8)
-#endif
+
+// Suppresses unused variable warnings.
 #define PE_UNUSED(x) ((void)&x);
 
+// Convenience macro for duplicating UTF-8 and ASCII strings.
+// Can be used as a direct replacement for strdup.
+#define pe_strdup(str) pe_strdup_utf8(str, 0, PE_ENCODING_UTF8)
 
-// caracter codificado en UTF-8
+/**
+ * Maximum number of text chunks that can be analyzed from an image file.
+ *
+ * Defines the upper limit for the number of text contents or chunks
+ * that the extractor can process from a single image file (e.g., JPEG, PNG).
+ */
+#define PE_MAX_TEXTCHUNK_COUNT 4
+
+/**
+ * Maximum size in bytes for a single text chunk.
+ *
+ * Acts as a safety limit to prevent memory allocation issues.
+ * The value is 6 MB (6 * 1024 * 1024 bytes).
+ */
+#define PE_MAX_TEXTCHUNK_SIZE (6*1024*1024)
+
+/**
+ * Represents a basic UTF-8 character unit.
+ */
 typedef char PeUTF8;
 
-// un byte con rango de valores de 0 a 255
+/**
+ * Represents a byte with a value range from 0 to 255.
+ */
 typedef unsigned char PeBYTE;
-
 
 
 /*============================ STATE REPORTING ============================*/
 
 enum PEREPORT_TYPE {
-    PEREPORT_INFO,     ///< el mensaje reportado es un mensaje informativo
-    PEREPORT_WARNING,  ///< el mensaje reportado es simplemente un warning
-    PEREPORT_ERROR     ///< el mensaje reportado es un error en la ejecución del programa
+    PEREPORT_INFO,     ///< The reported message is an info message
+    PEREPORT_WARNING,  ///< The reported message is a warning
+    PEREPORT_ERROR     ///< The reported message is an execution error
 };
 typedef enum PEREPORT_TYPE PEREPORT_TYPE;
 typedef void (PeReportFn)(PEREPORT_TYPE type, const PeUTF8* message);

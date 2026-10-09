@@ -5,11 +5,6 @@
 #include "types.h"     //< Basic types such as PeUTF8, PeBYTE, PeReportFn, etc. 
 #include "textchunk.h" //< PeTextChunk structure and related functions.
 
-/**
- * Maximum number of text contents/chunks that
- * can be analyzed from an image file (JPEG, PNG, etc.)
- */
-#define PE_MAX_TEXT_CONTENTS 4
 
 /**
  * Represents the text extracted from an image file (JPEG, PNG, etc.).
@@ -59,7 +54,7 @@ typedef struct PeString PeString;
 struct PeFileInfo {
     const PeUTF8* name;                        ///< File name including extension
     const PeUTF8* path;                        ///< Full path of the file
-    PeTextContent texts[PE_MAX_TEXT_CONTENTS]; ///< Array of found text contents (max number of elements determined by `PE_MAX_TEXT_CONTENTS`)
+    PeTextContent texts[PE_MAX_TEXTCHUNK_COUNT]; ///< Array of found text contents (max number of elements determined by `PE_MAX_TEXTCHUNK_COUNT`)
     int           texts_count;                 ///< Number of text contents found in the file
 };
 typedef struct PeFileInfo PeFileInfo;

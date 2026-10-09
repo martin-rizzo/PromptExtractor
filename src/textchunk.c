@@ -44,7 +44,7 @@ PeTextChunk* pe_create_textchunk(const char*   id,
                                  const PeUTF8* content,
                                  PeTextChunk*  chain
 ){
-    return pe_attach_textchunk(strdup(id), strdup(name), strdup(content), chain);
+    return pe_attach_textchunk(pe_strdup(id), pe_strdup(name), pe_strdup(content), chain);
 }
 
 

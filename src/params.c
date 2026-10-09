@@ -54,7 +54,7 @@ const PeParams* pe_params_from_chain(PeTextChunk*  chain,
 
     offset += stream_name_size;
     i = 0;
-    textchunk=chain; while (textchunk && i < PE_MAX_TEXT_CONTENTS)
+    textchunk=chain; while (textchunk && i < PE_MAX_TEXTCHUNK_COUNT)
     {
         offset += pe_compact_textchunk(
             textchunk,
@@ -84,7 +84,7 @@ const PeParams* pe_params_from_chain(PeTextChunk*  chain,
 
     // copy `textchunks`
     i = 0;
-    textchunk=chain; while (textchunk && i < PE_MAX_TEXT_CONTENTS)
+    textchunk=chain; while (textchunk && i < PE_MAX_TEXTCHUNK_COUNT)
     {
         offset += pe_compact_textchunk(
             textchunk,

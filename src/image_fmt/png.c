@@ -145,7 +145,7 @@ PeTextChunk* pe_textchunk_chain_from_png(FILE *     file,
 
         // intenta cargar el chunk de texto
         // si no se pudo cargar ningun chuck, el archivo termino o hubo error
-        candidate_chunk = load_text_chunk( chunk_size, 0, 0, file );
+        candidate_chunk = load_text_chunk( chunk_size, 0, PE_MAX_TEXTCHUNK_SIZE, file );
         fseek( file, CHUNK_CRC_SIZE, SEEK_CUR );
         if( !candidate_chunk ) {
             end_of_file=true; continue;
