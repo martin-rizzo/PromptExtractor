@@ -132,6 +132,23 @@ void print_report(PEREPORT_TYPE type, const PeUTF8* message) {
 
 /*===================== PRINTING PROMPT & GEN PARAMS ======================*/
 
+static
+int print_prompt(FILE* stream, const PeUTF8* stream_name) {
+    const PeParams* params = pe_params_from_stream(stream, stream_name, print_report);
+    printf("##>> PATH: %s\n", params->file.path);
+    printf("##>> NAME: %s\n", params->file.name);
+    for (int i=0; i<params->file.texts_count; ++i) {
+        printf("##>> %s (\"%s\"): %.60s\n",
+            params->file.texts[i].id,
+            params->file.texts[i].name,
+            params->file.texts[i].value
+        );
+    }
+    pe_destroy_params(params);
+    return 0;
+}
+
+
 /**
  * Prints the prompts embedded in multiple image files.
  *
@@ -142,18 +159,15 @@ void print_report(PEREPORT_TYPE type, const PeUTF8* message) {
 static
 int print_all_prompts(ConstStringPtr filepaths[], int count) {
 
-    // loop through each file and print it to the console
-    for( int fidx=0 ; fidx < count ; ++fidx )
-    {
-        ConstStringPtr  path   = filepaths[fidx];
-        const PeParams* params = pe_params_from_path(path, print_report);
-        for (int i=0; i<params->file.texts_count; ++i) {
-            printf("##>> %s: %.60s\n",
-                params->file.texts[i].name,
-                params->file.texts[i].value
-            );
+    // loop through each file and print it
+    for( int fidx=0 ; fidx < count ; ++fidx ) {
+        ConstStringPtr path = filepaths[fidx];
+        FILE*          file = fopen(path, "r");
+        if (file) {
+            print_prompt(file, path);
+            printf("\n");
+            fclose(file);
         }
-        pe_destroy_params(params);
     }
     return 0;
 }

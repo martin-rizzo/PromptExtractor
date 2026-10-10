@@ -105,8 +105,31 @@ PE_ENCODING pe_detect_encoding(const void *buffer, size_t buffer_size);
  * @return A pointer to the newly allocated UTF-8 string, or NULL if allocation
  *         fails. For unknown encodings, returns a newly allocated empty string.
  */
-PeUTF8 *pe_strdup_utf8(const void* buffer, size_t bufsize, PE_ENCODING bufencoding);
+PeUTF8* pe_strdup_utf8(const void* buffer, size_t bufsize, PE_ENCODING bufencoding);
 
+
+/**
+ * Converts an ASCII string buffer into a newly allocated uppercase string.
+ *
+ * Transforms the input buffer into a new string where all alphabetic characters
+ * are converted to uppercase, digits are preserved, and any other characters
+ * are replaced with an underscore ('_'). The resulting string mimics the
+ * naming convention of C99 constants (e.g., "User Comment" becomes "USER_COMMENT").
+ *
+ * The function supports only ASCII encoding. If the buffer encoding is not
+ * ASCII, it returns a newly allocated empty string.
+ *
+ * @param buffer      Pointer to the source buffer. If NULL, returns NULL.
+ * @param bufsize     Size of the source buffer in bytes. If 0, the function
+ *                    automatically determines the size using `strlen`.
+ * @param bufencoding The encoding format of the source buffer. Only
+ *                    `PE_ENCODING_ASCII` is fully supported; other encodings
+ *                    result in an empty string.
+ * @return A pointer to the newly allocated uppercase string, or NULL if
+ *         allocation fails. For unsupported encodings, returns a newly
+ *         allocated empty string.
+ */
+char* pe_strdup_UPPER_ASCII(const void* buffer, size_t bufsize, PE_ENCODING bufencoding);
 
 
 #endif /*PE__TYPES_H__*/

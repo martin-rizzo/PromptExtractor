@@ -36,7 +36,9 @@
 
 /*=========================== HELPER FUNCTIONS ============================*/
 
-bool has_jpeg_signature(FILE *file) {
+static bool
+_has_jpeg_signature(FILE *file
+){
     if (file == NULL) { return false; }
 
     // Guardamos la posición inicial del puntero del archivo
@@ -80,8 +82,9 @@ bool has_jpeg_signature(FILE *file) {
  *     The value of the read marker if found successfully,
  *     or JPEG_ERROR (-1) in case of error or end of file.
  */
-static
-int _read_jpg_marker( FILE *file ) {
+static int
+_read_jpg_marker(FILE *file
+){
     int hi_byte, lo_byte;
 
     bool is_valid_marker = false;
@@ -110,8 +113,9 @@ enum APP1_FORMAT {
 typedef enum APP1_FORMAT APP1_FORMAT;
 
 
-static
-APP1_FORMAT _read_app1_format( FILE * file ) {
+static APP1_FORMAT
+_read_app1_format(FILE * file
+){
     static const char EXIF_ID[]           = "Exif\x00\x00";
     static size_t     EXIF_IDSIZE         = 6;
     static const char XMP_ID[]            = "http://ns.adobe.com/xap/1.0/\x00";
@@ -148,8 +152,8 @@ APP1_FORMAT _read_app1_format( FILE * file ) {
 
 
 
-//static
-bool _search_tiff_dir( int  *out_offset,
+static bool
+_search_tiff_dir( int  *out_offset,
                        int  *out_count,
                        int   tag_to_find,
                        FILE *file,
@@ -189,8 +193,9 @@ bool _search_tiff_dir( int  *out_offset,
 }
 
 
-static
-PeTextChunk* _read_exif_user_comment( FILE *file ) {
+static PeTextChunk*
+_read_exif_user_comment(FILE *file
+){
     static const PeBYTE IntelHeader[4]    = { 0x49, 0x49, 0x2A, 0x00 };
     static const PeBYTE MotorolaHeader[4] = { 0x4D, 0x4D, 0x00, 0x2A };
     static const int TAG_EXIF_OFFSET  = 0x8769;
@@ -274,6 +279,14 @@ PeTextChunk* pe_textchunk_chain_from_jpeg(FILE*      file,
     };
     size_t start;
     int marker, size16bits;
+
+    // verifica si el archivo es un JPEG mediante su firma
+    // en caso de no serlo, retorna NULL con el puntero de lectura en la posicion inicial
+    const long initial_post = ftell(file);
+    fseek(file, initial_post, SEEK_SET);
+    if( !_has_jpeg_signature(file) ) {
+        return NULL;
+    }
     
     // recorrer uno por uno los data-segments del archivo jpeg
     // identificandolos mediante su 'marker'

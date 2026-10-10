@@ -5,6 +5,38 @@
 #include <stdio.h>
 #include <string.h>
 
+/**
+ * Extracts the basename from a given file path.
+ *
+ * This function analyzes the provided path string and returns a pointer
+ * to the last component of the path (i.e., the filename), regardless of
+ * whether the path uses forward slashes ('/') or backslashes ('\').
+ * It works correctly for both Windows and Linux paths.
+ *
+ * @param path The input file path string.
+ * @return
+ *     A pointer to the start of the basename within the path string.
+ *     If the path is NULL, returns NULL.
+ */
+static const PeUTF8*
+_get_basename(const PeUTF8 *path) {
+    if (!path) { return NULL; }
+    const char *last_backslash = strrchr(path, '\\');
+    const char *last_slash     = strrchr(path, '/');
+    const char *basename_start = NULL;
+
+    // use the slash that appears later in the string
+    if (last_backslash > last_slash) { basename_start = last_backslash; }
+    else                             { basename_start = last_slash;     }
+    return (basename_start != NULL) ? (basename_start + 1) : path;
+}
+
+
+/*===========================================================================
+|  ////////////////////////// PUBLIC FUNCTIONS ///////////////////////////  | 
+===========================================================================*/
+
+
 // Creates a `PeParams` by extracting generation parameters from a image file (e.g., JPEG, PNG).
 const PeParams* pe_params_from_path(const PeUTF8* fullpath,
                                     PeReportFn    report
@@ -65,7 +97,7 @@ const PeParams* pe_params_from_chain(PeTextChunk*  chain,
         ++i;
     }
 
-    // Allocate PeParams with the calculated buffer size appended
+    // allocate PeParams with the calculated buffer size appended
     PeParams* params = calloc(1, sizeof(PeParams) + offset);
     if (!params) {
         if (report) report(PEREPORT_ERROR, "Memory allocation failed for `params`.");
@@ -79,7 +111,7 @@ const PeParams* pe_params_from_chain(PeTextChunk*  chain,
     // copy `stream_name`
     memcpy(buffer, stream_name, stream_name_size);
     params->file.path = (const PeUTF8*)&buffer[offset];
-    params->file.name = (const PeUTF8*)&buffer[offset];
+    params->file.name = _get_basename( params->file.path );
     offset += stream_name_size;
 
     // copy `textchunks`
@@ -103,6 +135,7 @@ const PeParams* pe_params_from_chain(PeTextChunk*  chain,
 }
 
 
+// Destroys and frees the memory allocated for a PeParams structure.
 void pe_destroy_params(const PeParams* params
 ){
     if (params) { free((void*)params);  }

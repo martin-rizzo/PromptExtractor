@@ -74,7 +74,7 @@ size_t _codepoint_to_utf8(unsigned int codept, PeUTF8 *out) {
 }
 
 
-// Detects the encoding of a string.
+// Converts a source character buffer into a newly allocated UTF-8 string.
 PE_ENCODING pe_detect_encoding(const void* buffer,
                                size_t      buffer_size
 ){
@@ -189,6 +189,44 @@ PeUTF8 *pe_strdup_utf8(const void* buffer,
         default:
             result = malloc(4);
             if (result) { memset(result, 0, 4); }
+            return result;
+
+    }
+}
+
+
+// Converts an ASCII string buffer into a newly allocated uppercase string.
+char * pe_strdup_UPPER_ASCII(const void* buffer,
+                             size_t      bufsize,
+                             PE_ENCODING bufencoding
+){
+    if (!buffer) { return NULL; }
+    char* result = NULL;
+
+    switch (bufencoding) {
+
+        case PE_ENCODING_ASCII:
+            // if bufsize is not specified, use the length of the string
+            if (bufsize==0) { bufsize = strlen((const char *)buffer); }
+
+            result = malloc(bufsize + 1);
+            if (!result) return NULL;
+
+            const char* src = (const char *)buffer;
+            for (size_t i = 0; i < bufsize; i++) {
+                char c = src[i];
+                if      (c >= 'a' && c <= 'z') { result[i] = c - 32; }
+                else if (c >= 'A' && c <= 'Z') { result[i] = c;      }
+                else if (c >= '0' && c <= '9') { result[i] = c;      }
+                else                           { result[i] = '_';    }
+            }
+            result[bufsize] = '\0';
+            return result;
+
+        // this function supports only ASCII text,
+        // any other encoding returns an empty string.
+        default:
+            result = calloc(1, 4);
             return result;
 
     }

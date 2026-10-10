@@ -32,7 +32,7 @@
  *     A pointer to the loaded text chunk, or NULL on error.
  */
 static PeUTF8*
-load_text_chunk(size_t chunk_size, size_t min_allocation, size_t max_allocation, FILE* file) {
+_load_text_chunk(size_t chunk_size, size_t min_allocation, size_t max_allocation, FILE* file) {
 
     // by default, the number of bytes to allocate and the number of
     // bytes to request are equal to the size of the chunk to be loaded
@@ -79,21 +79,14 @@ load_text_chunk(size_t chunk_size, size_t min_allocation, size_t max_allocation,
  *     Returns TRUE if the file has the PNG signature;
  *     otherwise, returns FALSE.
  */
-static
-bool has_png_signature( FILE *file ) {
+static bool
+_has_png_signature( FILE *file ) {
     static const PeBYTE SIGNATURE[] = {137, 80, 78, 71, 13, 10, 26, 10};
     PeBYTE buffer[sizeof(SIGNATURE)];
 
-    // store the current position of the file
-    const long initial_pos = ftell(file);
-
-    bool has_signature =
+    return
         fread(buffer, sizeof(buffer), 1, file) &&
         memcmp(buffer, SIGNATURE, sizeof(SIGNATURE))==0;
-
-    // restore the position if there was no PNG signature
-    if (!has_signature) { fseek(file, initial_pos, SEEK_SET);  }
-    return has_signature;
 }
 
 
@@ -101,6 +94,20 @@ bool has_png_signature( FILE *file ) {
 |  ////////////////////////// PUBLIC FUNCTIONS ///////////////////////////  | 
 ===========================================================================*/
 
+/**
+ * Extracts a chain of text chunks from a PNG file.
+ *
+ * Reads through the PNG file, identifies `tEXt` chunks, and builds a linked
+ * list of `PeTextChunk` structures containing the extracted text data.
+ * The caller is responsible for freeing the returned chain using
+ * `pe_destroy_textchunk_chain()`.
+ *
+ * @param file   Pointer to the FILE object representing the PNG file.
+ * @param report A callback function for reporting errors, warnings, and info messages.
+ * @return
+ *    A pointer to the first text chunk in the chain, or NULL if no PNG file
+ *    was found or error occurred.
+ */
 PeTextChunk* pe_textchunk_chain_from_png(FILE *     file,
                                          PeReportFn report
 ){
@@ -111,13 +118,15 @@ PeTextChunk* pe_textchunk_chain_from_png(FILE *     file,
     PeBYTE chunk_header[CHUNK_HEADER_SIZE];
     PeBYTE *chunk_type; PeUTF8* candidate_chunk;
     unsigned chunk_size;
-    //int idx, i;
     size_t bytes_read;
-    //int key_length;
-    //int max_key_length = 0;
-    //bool found_any_key = false;
 
-    if( !has_png_signature(file) ) { return NULL; }
+    // verifica si el archivo es PNG mediante su firma
+    // en caso de no serlo, retorna NULL con el puntero de lectura en la posicion inicial
+    const long initial_pos = ftell(file);
+    if( !_has_png_signature(file) ) {
+        fseek(file, initial_pos, SEEK_SET);
+        return NULL;
+    }
 
     PeTextChunk* textchunk_chain = NULL;
     end_of_file = false;
@@ -145,14 +154,15 @@ PeTextChunk* pe_textchunk_chain_from_png(FILE *     file,
 
         // intenta cargar el chunk de texto
         // si no se pudo cargar ningun chuck, el archivo termino o hubo error
-        candidate_chunk = load_text_chunk( chunk_size, 0, PE_MAX_TEXTCHUNK_SIZE, file );
+        candidate_chunk = _load_text_chunk( chunk_size, 0, PE_MAX_TEXTCHUNK_SIZE, file );
         fseek( file, CHUNK_CRC_SIZE, SEEK_CUR );
         if( !candidate_chunk ) {
             end_of_file=true; continue;
         }
 
-        // deberia convertir el 'candidate_chunk' todo a mayusculas + numeros y reemplazar cualquier signo raro con '_' (underscore)
-        const char* candidate_chunk_id = candidate_chunk;
+        // TODO: deberia convertir el 'candidate_chunk' todo a mayusculas
+        //       mas numeros y reemplazar cualquier signo raro con '_' (underscore)
+        char* candidate_chunk_id = pe_strdup_UPPER_ASCII( candidate_chunk, 0, PE_ENCODING_ASCII );
 
         textchunk_chain = pe_create_textchunk(
             candidate_chunk_id,
@@ -160,6 +170,7 @@ PeTextChunk* pe_textchunk_chain_from_png(FILE *     file,
             candidate_chunk + strlen(candidate_chunk) + 1,
             textchunk_chain);
 
+        free( candidate_chunk_id );
         free( candidate_chunk );
     }
 
