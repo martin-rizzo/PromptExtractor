@@ -95,7 +95,7 @@ PeTextChunk* pe_attach_textchunk(const char*   id_in_heap,
  * @param out_id_ptr       Output pointer that will be set to the copied `id` string in the buffer.
  * @param out_name_ptr     Output pointer that will be set to the copied `name` string in the buffer.
  * @param out_content_ptr  Output pointer that will be set to the first copy of the `content` string in the buffer.
- * @param out_content2_ptr Output pointer that will be set to the second copy of the `content` string in the buffer.
+ * @param out_content_size Output pointer that will be set to the size of the `content` string (including the null terminator).
  * @return
  *   The total number of bytes used in the buffer (including null terminators).
  */
@@ -104,7 +104,7 @@ size_t pe_compact_textchunk(const PeTextChunk* textchunk,
                             const char*        *out_id_ptr,
                             const PeUTF8*      *out_name_ptr,
                             const PeUTF8*      *out_content_ptr,
-                            PeUTF8*            *out_content2_ptr
+                            size_t             *out_content_size
                             );
 
 

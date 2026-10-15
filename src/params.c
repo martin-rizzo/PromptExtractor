@@ -74,44 +74,49 @@ const PeParams* pe_params_from_chain(PeTextChunk*  chain,
                                      const PeUTF8* stream_name,
                                      PeReportFn    report
 ){
-    int i;
-    size_t offset;
-    PeBYTE* buffer;
+    size_t content_size;
     PeTextChunk* textchunk;
     size_t stream_name_size = strlen(stream_name) + 1;
 
-    // FIRST PASS: calculate total size needed for the buffer
-    offset = 0;
-    buffer = NULL;
-
-    offset += stream_name_size;
-    i = 0;
+    //-- FIRST PASS: calculate total size needed for the buffer -------------
+    int i = 0;
+    size_t textchunks_size  = 0;
+    size_t max_content_size = 0;
     textchunk=chain; while (textchunk && i < PE_MAX_TEXTCHUNK_COUNT)
     {
-        offset += pe_compact_textchunk(
+        textchunks_size += pe_compact_textchunk(
             textchunk,
-            buffer,
-            NULL, NULL, NULL, NULL
+            NULL,
+            NULL, NULL, NULL, &content_size
         );
+        if (max_content_size<content_size) { max_content_size = content_size; }
         textchunk = textchunk->_next;
         ++i;
     }
 
+    const size_t storage_size     = max_content_size;
+    const size_t total_parms_size = sizeof(PeParams) + storage_size + stream_name_size + textchunks_size;
+
     // allocate PeParams with the calculated buffer size appended
-    PeParams* params = calloc(1, sizeof(PeParams) + offset);
+    PeParams* params = calloc(1, total_parms_size);
     if (!params) {
         if (report) report(PEREPORT_ERROR, "Memory allocation failed for `params`.");
         return NULL;
     }
 
-    // SECOND PASS: copy data into the buffer
-    offset = 0;
-    buffer = (PeBYTE*)params + sizeof(PeParams);
+    //-- SECOND PASS: copy data into the buffer -----------------------------
+    size_t  offset = 0;
+    PeBYTE* buffer = (PeBYTE*)params + sizeof(PeParams);
+
+    // dejar un espacio para `_storage`
+    params->_storage.ptr  = (void*)&buffer[offset];
+    params->_storage.size = storage_size;
+    offset += storage_size;
 
     // copy `stream_name`
     memcpy(buffer, stream_name, stream_name_size);
-    params->file.path = (const PeUTF8*)&buffer[offset];
-    params->file.name = _get_basename( params->file.path );
+    params->fileinfo.path = (const PeUTF8*)&buffer[offset];
+    params->fileinfo.name = _get_basename( params->fileinfo.path );
     offset += stream_name_size;
 
     // copy `textchunks`
@@ -121,15 +126,18 @@ const PeParams* pe_params_from_chain(PeTextChunk*  chain,
         offset += pe_compact_textchunk(
             textchunk,
             &buffer[offset],
-            &params->file.texts[i].id,
-            &params->file.texts[i].name,
-            &params->file.texts[i].value,
-            &params->file.texts[i]._scratchpad
+            &params->fileinfo.texts[i].id,
+            &params->fileinfo.texts[i].name,
+            &params->fileinfo.texts[i].content,
+            (size_t*)(&params->fileinfo.texts[i].content_size)
         );
+        if (params->fileinfo.texts[i].content_size > max_content_size) {
+            max_content_size = params->fileinfo.texts[i].content_size;
+        }
         textchunk = textchunk->_next;
         ++i;
     }
-    params->file.texts_count = i;
+    params->fileinfo.texts_count = i;
 
     return params;
 }

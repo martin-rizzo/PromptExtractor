@@ -69,7 +69,7 @@ size_t pe_compact_textchunk(const PeTextChunk* textchunk,
                             const char*        *out_id_ptr,
                             const PeUTF8*      *out_name_ptr,
                             const PeUTF8*      *out_content_ptr,
-                            PeUTF8*            *out_content2_ptr
+                            size_t             *out_content_size
 ){
     const size_t id_size      = strlen(textchunk->id     ) + 1;
     const size_t name_size    = strlen(textchunk->name   ) + 1;
@@ -96,15 +96,8 @@ size_t pe_compact_textchunk(const PeTextChunk* textchunk,
     // copy `.content` and advance the offset
     if (destbuf) {
         memcpy(&destbuf[offset], textchunk->content, content_size);
-        if (out_content_ptr) { (*out_content_ptr) = (const PeUTF8*)&destbuf[offset]; }
-    }
-    offset = ALIGN_UP(offset + content_size);
-
-
-    // copy `.content` again and advance the offset
-    if (destbuf) {
-        memcpy(&destbuf[offset], textchunk->content, content_size);
-        if (out_content2_ptr) { (*out_content2_ptr) = (PeUTF8*)&destbuf[offset]; }
+        if (out_content_ptr)  { (*out_content_ptr)  = (const PeUTF8*)&destbuf[offset]; }
+        if (out_content_size) { (*out_content_size) = content_size; }
     }
     offset = ALIGN_UP(offset + content_size);
    

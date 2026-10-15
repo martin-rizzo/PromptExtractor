@@ -135,13 +135,13 @@ void print_report(PEREPORT_TYPE type, const PeUTF8* message) {
 static
 int print_prompt(FILE* stream, const PeUTF8* stream_name) {
     const PeParams* params = pe_params_from_stream(stream, stream_name, print_report);
-    printf("##>> PATH: %s\n", params->file.path);
-    printf("##>> NAME: %s\n", params->file.name);
-    for (int i=0; i<params->file.texts_count; ++i) {
+    printf("##>> PATH: %s\n", params->fileinfo.path);
+    printf("##>> NAME: %s\n", params->fileinfo.name);
+    for (int i=0; i<params->fileinfo.texts_count; ++i) {
         printf("##>> %s (\"%s\"): %.60s\n",
-            params->file.texts[i].id,
-            params->file.texts[i].name,
-            params->file.texts[i].value
+            params->fileinfo.texts[i].id,
+            params->fileinfo.texts[i].name,
+            params->fileinfo.texts[i].content
         );
     }
     pe_destroy_params(params);

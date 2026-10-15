@@ -11,6 +11,8 @@
 \_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _*/
 #ifndef PE__TYPES_H__
 #define PE__TYPES_H__
+#include <stdlib.h>
+
 
 // Suppresses unused variable warnings.
 #define PE_UNUSED(x) ((void)&x);
