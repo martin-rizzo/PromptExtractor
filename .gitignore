@@ -18,4 +18,5 @@ Doxyfile
 
 # Ignore build artifacts and compiled files
 /bin/
+/build/
 *.o

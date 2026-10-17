@@ -13,13 +13,13 @@
 #include <stdlib.h>
 #include <stdio.h>
 #include <string.h>
-#include "types.h"
+#include <promptex/types.h>
+#include <promptex/params.h>
 #include "internal.h"
 #include "image_fmt/png.h"
 #include "image_fmt/jpeg.h"
 #include "prompt_fmt/a1111.h"
 #include "prompt_fmt/comfyui.h"
-#include "params.h"
 
 /**
  * Extracts the basename from a given file path.
@@ -68,45 +68,18 @@ _parse_params(PeParams* params
 }
 
 
-/*===========================================================================
-|  ////////////////////////// PUBLIC FUNCTIONS ///////////////////////////  | 
-===========================================================================*/
-
-
-// Creates a `PeParams` by extracting generation parameters from a image file (e.g., JPEG, PNG).
-const PeParams* pe_params_from_path(const PeUTF8* fullpath,
-                                    PeReportFn    report
-){
-    FILE* stream = fopen(fullpath, "rb");
-    if (!stream) {
-        if (report) report(PEREPORT_ERROR, "Failed to open file");
-        return NULL;
-    }
-    const PeParams* params = pe_params_from_stream(stream, fullpath, report);
-    fclose(stream);
-    return params;
-}
-
-
-// Creates a `PeParams` by extracting generation parameters from the provided stream.
-const PeParams* pe_params_from_stream(FILE*         stream,
-                                      const PeUTF8* stream_name,
-                                      PeReportFn    report
-){
-    PeTextChunk* chain = _extract_textchunk_chain(stream, report);
-    if (chain) {
-        const PeParams* params = pe_params_from_chain(chain, stream_name, report);
-        pe_destroy_textchunk_chain(chain);
-        return params;
-    }
-    else {
-        report(PEREPORT_ERROR, "Could not find any text chunk in the file");
-        return NULL;
-    }
-}
-
-
-// Creates a `PeParams` by extracting generation parameters from a chain of text chunks.
+/**
+ * Creates a `PeParams` by extracting generation parameters from a chain of text chunks.
+ * @param chain       A pointer to the first node of the text chunk chain.
+ * @param stream_name Specifies the source of the chain. It can be:
+ *                     - The full path of the associated file.
+ *                     - An identifying name if the chain is not file-backed.
+ *                     - An empty string as a fallback.
+ * @param report      A callback function for reporting errors, warnings, and info messages.
+ * @return
+ *     A pointer to the newly created PeParams structure, or NULL if an error occurs.
+ */
+static
 const PeParams* pe_params_from_chain(PeTextChunk*  chain,
                                      const PeUTF8* stream_name,
                                      PeReportFn    report
@@ -184,6 +157,43 @@ const PeParams* pe_params_from_chain(PeTextChunk*  chain,
         params = NULL;
     }
     return params;
+}
+
+
+/*===========================================================================
+|  ////////////////////////// PUBLIC FUNCTIONS ///////////////////////////  | 
+===========================================================================*/
+
+// Creates a `PeParams` by extracting generation parameters from a image file (e.g., JPEG, PNG).
+const PeParams* pe_params_from_path(const PeUTF8* fullpath,
+                                    PeReportFn    report
+){
+    FILE* stream = fopen(fullpath, "rb");
+    if (!stream) {
+        if (report) report(PEREPORT_ERROR, "Failed to open file");
+        return NULL;
+    }
+    const PeParams* params = pe_params_from_stream(stream, fullpath, report);
+    fclose(stream);
+    return params;
+}
+
+
+// Creates a `PeParams` by extracting generation parameters from the provided stream.
+const PeParams* pe_params_from_stream(FILE*         stream,
+                                      const PeUTF8* stream_name,
+                                      PeReportFn    report
+){
+    PeTextChunk* chain = _extract_textchunk_chain(stream, report);
+    if (chain) {
+        const PeParams* params = pe_params_from_chain(chain, stream_name, report);
+        pe_destroy_textchunk_chain(chain);
+        return params;
+    }
+    else {
+        report(PEREPORT_ERROR, "Could not find any text chunk in the file");
+        return NULL;
+    }
 }
 
 

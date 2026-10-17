@@ -13,10 +13,7 @@
 #include <stdio.h>
 #include <string.h>
 #include <stdbool.h>
-#include "internal.h"
-#include "params.h"
-#include "image_fmt/png.h"
-#include "image_fmt/jpeg.h"
+#include <promptex/params.h>
 typedef PeUTF8*       StringPtr;
 typedef const PeUTF8* ConstStringPtr;
 #define VERSION_MAJOR 0
@@ -97,7 +94,7 @@ void set_color_theme(int index) {
  * @return The exit code that should be returned by the command (0 == success)
  */
 int print_help(int argc, char* argv[]) {
-    unused(argc);
+    (void)argc;
     printf(HELP, argv[0], argv[0]);
     return 0;
 }

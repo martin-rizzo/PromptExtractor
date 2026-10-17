@@ -3,7 +3,6 @@
 -Wall
 -Wextra
 -Wunused-function
--Isrc
--Isrc/image_fmt
--Ideps
+-Iinclude
+-Ilibpromptex
 -g

@@ -11,7 +11,7 @@
 \_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _*/
 #ifndef PE__TEXTCHUNK_H__
 #define PE__TEXTCHUNK_H__
-#include "types.h"
+#include <promptex/types.h>
 
 
 /*=========================== TextChunk STRUCT ============================*/

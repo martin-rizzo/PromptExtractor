@@ -1,45 +1,93 @@
-# Standard Makefile for a C project with sources in src/
-# Default installation path is $(HOME)/.local/bin
+# File    : Makefile
+# Purpose : Build configuration for PromptExtractor
+# Author  : Martin Rizzo | <martinrizzo@gmail.com>
+# Date    : Oct 2, 2026
+# Repo    : https://github.com/martin-rizzo/PromptExtractor
+# License : MIT
+#- - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+#                              PromptExtractor
+# A lightweight CLI tool to extract embedded prompts from AI-generated images.
+#_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
 
-CC         = gcc
-CFLAGS     = -std=c99 -pedantic -Wall -Wextra -Wunused-function -Isrc -Isrc/image_fmt -Ideps -g
-LDFLAGS    = 
-TARGET_DIR = bin
-TARGET     = $(TARGET_DIR)/promptex
-HEADERS    = $(wildcard src/*.h) $(wildcard src/image_fmt/*.h) $(wildcard src/prompt_fmt/*.h)
-SRCS       = $(wildcard src/*.c) $(wildcard src/image_fmt/*.c) $(wildcard src/prompt_fmt/*.c)
-OBJS       = $(SRCS:.c=.o)
+# ==============================================================================
+# Compiler Options and Flags
+# ==============================================================================
+CC       := gcc
+CFLAGS   := -std=c99 -pedantic -Wall -Wextra -Wunused-function -Iinclude -Ilibpromptex -g
+#CFLAGS   := -std=c99 -pedantic -Wall -Wextra -Wunused-function  -Iinclude -O2 
+AR       := ar
+ARFLAGS  := rcs
 
-# Define default installation prefix
-ifndef PREFIX
-PREFIX = $(HOME)/.local
-endif
+# ==============================================================================
+# Final Target Names
+# ==============================================================================
+LIB_NAME := libpromptex.a
+BIN_NAME := promptex
 
-.PHONY: all clean run install uninstall
+# ==============================================================================
+# Directory Paths
+# ==============================================================================
+SRC_DIR   := src
+LIB_DIR   := libpromptex
+BUILD_DIR := build
+BIN_DIR   := bin
 
-all: $(TARGET)
+# ==============================================================================
+# Automatic Source and Object File Detection
+# ==============================================================================
+# Static library source and object files
+LIB_SRCS := $(wildcard $(LIB_DIR)/*.c)
+LIB_OBJS := $(patsubst $(LIB_DIR)/%.c, $(BUILD_DIR)/$(LIB_DIR)/%.o, $(LIB_SRCS))
 
-$(TARGET): $(TARGET_DIR) $(OBJS)
-	$(CC) $(CFLAGS) $(LDFLAGS) -o $@ $(OBJS)
+# Executable (CLI) source and object files
+CLI_SRCS := $(wildcard $(SRC_DIR)/*.c)
+CLI_OBJS := $(patsubst $(SRC_DIR)/%.c, $(BUILD_DIR)/$(SRC_DIR)/%.o, $(CLI_SRCS))
 
-%.o: %.c $(HEADERS)
+# Final products with full paths
+FINAL_LIB := $(BIN_DIR)/$(LIB_NAME)
+FINAL_BIN := $(BIN_DIR)/$(BIN_NAME)
+
+# ==============================================================================
+# Compilation Rules (Main Rules)
+# ==============================================================================
+
+# The default target builds everything
+all: $(FINAL_LIB) $(FINAL_BIN)
+
+# Rule to link the final binary (CLI) using the static library
+$(FINAL_BIN): $(CLI_OBJS) $(FINAL_LIB) | $(BIN_DIR)
+	@echo "====== Linking final executable: $@ ======"
+	$(CC) $(CFLAGS) $(CLI_OBJS) -L$(BIN_DIR) -lpromptex -o $@
+	@echo "Build successful! Executable created at: $@"
+
+# Rule to package the static library (.a)
+$(FINAL_LIB): $(LIB_OBJS) | $(BIN_DIR)
+	@echo "====== Creating static library: $@ ======"
+	$(AR) $(ARFLAGS) $@ $(LIB_OBJS)
+
+# Pattern rule to compile library objects
+$(BUILD_DIR)/$(LIB_DIR)/%.o: $(LIB_DIR)/%.c | $(BUILD_DIR)/$(LIB_DIR)
+	@echo "Compiling library component: $<"
 	$(CC) $(CFLAGS) -c $< -o $@
 
+# Pattern rule to compile CLI objects
+$(BUILD_DIR)/$(SRC_DIR)/%.o: $(SRC_DIR)/%.c | $(BUILD_DIR)/$(SRC_DIR)
+	@echo "Compiling CLI component: $<"
+	$(CC) $(CFLAGS) -c $< -o $@
+
+# ==============================================================================
+# Dynamic Directory Creation
+# ==============================================================================
+$(BIN_DIR) $(BUILD_DIR)/$(LIB_DIR) $(BUILD_DIR)/$(SRC_DIR):
+	@mkdir -p $@
+
+# ==============================================================================
+# Project Cleanup
+# ==============================================================================
 clean:
-	rm -f $(TARGET) $(OBJS)
+	@echo "Cleaning up compilation files..."
+	rm -rf $(BUILD_DIR) $(BIN_DIR)
+	@echo "Cleanup completed."
 
-run: $(TARGET)
-	./$(TARGET) test.*
-
-install: $(TARGET)
-	install -d $(PREFIX)/bin
-	install -s $(TARGET) $(PREFIX)/bin/
-
-uninstall:
-	rm -f $(PREFIX)/bin/$(TARGET)
-
-distclean: clean
-	rm -f Makefile
-
-$(TARGET_DIR):
-	mkdir -p $(TARGET_DIR)
+# Prevents conflicts if files named 'all' or 'clean' exist
+.PHONY: all clean

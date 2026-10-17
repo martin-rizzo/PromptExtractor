@@ -14,8 +14,8 @@
 #include <stdbool.h>
 #include <string.h>
 #include <errno.h>
-#include "types.h"
-#include "params_defs.h"
+#include <promptex/types.h>
+#include <promptex/params_defs.h>
 
 /*===========================================================================
 |  ////////////////////////// PUBLIC FUNCTIONS ///////////////////////////  | 

@@ -14,7 +14,6 @@
 #include <stdio.h>
 #include <stdbool.h>
 #include "types.h"       //< Basic types such as PeUTF8, PeBYTE, PeReportFn, etc. 
-#include "textchunk.h"   //< PeTextChunk structure and related functions.
 #include "params_defs.h" //< Definitions for parameter types, fileinfo and storage.
 
 
@@ -93,23 +92,6 @@ const PeParams* pe_params_from_stream(FILE*         stream,
                                       const PeUTF8* stream_name,
                                       PeReportFn    report
                                       );
-
-
-/**
- * Creates a `PeParams` by extracting generation parameters from a chain of text chunks.
- * @param chain       A pointer to the first node of the text chunk chain.
- * @param stream_name Specifies the source of the chain. It can be:
- *                     - The full path of the associated file.
- *                     - An identifying name if the chain is not file-backed.
- *                     - An empty string as a fallback.
- * @param report      A callback function for reporting errors, warnings, and info messages.
- * @return
- *     A pointer to the newly created PeParams structure, or NULL if an error occurs.
- */
-const PeParams* pe_params_from_chain(PeTextChunk*  chain,
-                                     const PeUTF8* stream_name,
-                                     PeReportFn    report
-                                     );
 
 /**
  * Destroys and frees the memory allocated for a PeParams structure.

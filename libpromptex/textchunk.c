@@ -11,7 +11,7 @@
 \_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _*/
 #include <stdlib.h>
 #include <string.h>
-#include "types.h"
+#include <promptex/types.h>
 #include "textchunk.h"
 
 /**

@@ -11,7 +11,7 @@
 \_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _*/
 #ifndef PE__INTERNAL_H__
 #define PE__INTERNAL_H__
-#include "types.h"
+#include <promptex/types.h>
 
 /**
  * Suppresses "unused variable" warnings for function arguments.

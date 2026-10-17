@@ -12,7 +12,7 @@
 #include <stdlib.h>
 #include <stdbool.h>
 #include <string.h>
-#include "types.h"
+#include <promptex/types.h>
 
 /**
  * Extracts a 16-bit UTF-16 code unit from a byte buffer at a specified index.
