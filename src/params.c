@@ -1,9 +1,25 @@
-#include "params.h"
-#include "image_fmt/png.h"
-#include "image_fmt/jpeg.h"
+/*
+| File    : params.h
+| Purpose : Handling generation parameters extracted from AI image files.
+| Author  : Martin Rizzo | <martinrizzo@gmail.com>
+| Date    : Oct 9, 2026
+| Repo    : https://github.com/martin-rizzo/PromptExtractor
+| License : MIT
+|- - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+|                              PromptExtractor
+| A lightweight CLI tool to extract embedded prompts from AI-generated images.
+\_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _*/
+#include <assert.h>
 #include <stdlib.h>
 #include <stdio.h>
 #include <string.h>
+#include "types.h"
+#include "internal.h"
+#include "image_fmt/png.h"
+#include "image_fmt/jpeg.h"
+#include "prompt_fmt/a1111.h"
+#include "prompt_fmt/comfyui.h"
+#include "params.h"
 
 /**
  * Extracts the basename from a given file path.
@@ -32,6 +48,26 @@ _get_basename(const PeUTF8 *path) {
 }
 
 
+static PeTextChunk*
+_extract_textchunk_chain(FILE*      stream,
+                         PeReportFn report
+){
+    PeTextChunk* chain = NULL;
+    if (chain == NULL) { chain = pe_textchunk_chain_from_png (stream,report); }
+    if (chain == NULL) { chain = pe_textchunk_chain_from_jpeg(stream,report); }
+    return chain;
+}
+
+static bool
+_parse_params(PeParams* params
+){
+    bool is_parsed = false;
+    if (!is_parsed) { is_parsed = pe_a1111_parse  (params); }
+    if (!is_parsed) { is_parsed = pe_comfyui_parse(params); }
+    return is_parsed;
+}
+
+
 /*===========================================================================
 |  ////////////////////////// PUBLIC FUNCTIONS ///////////////////////////  | 
 ===========================================================================*/
@@ -57,15 +93,16 @@ const PeParams* pe_params_from_stream(FILE*         stream,
                                       const PeUTF8* stream_name,
                                       PeReportFn    report
 ){
-    const PeParams* params = NULL;
-
-    PeTextChunk* chain  = NULL;
-    if (chain == NULL) { chain = pe_textchunk_chain_from_png (stream,report); }
-    if (chain == NULL) { chain = pe_textchunk_chain_from_jpeg(stream,report); }
-    params = pe_params_from_chain(chain, stream_name, report);
-    pe_destroy_textchunk_chain(chain);
-
-    return params;
+    PeTextChunk* chain = _extract_textchunk_chain(stream, report);
+    if (chain) {
+        const PeParams* params = pe_params_from_chain(chain, stream_name, report);
+        pe_destroy_textchunk_chain(chain);
+        return params;
+    }
+    else {
+        report(PEREPORT_ERROR, "Could not find any text chunk in the file");
+        return NULL;
+    }
 }
 
 
@@ -114,7 +151,7 @@ const PeParams* pe_params_from_chain(PeTextChunk*  chain,
     offset += storage_size;
 
     // copy `stream_name`
-    memcpy(buffer, stream_name, stream_name_size);
+    memcpy(&buffer[offset], stream_name, stream_name_size);
     params->fileinfo.path = (const PeUTF8*)&buffer[offset];
     params->fileinfo.name = _get_basename( params->fileinfo.path );
     offset += stream_name_size;
@@ -139,6 +176,13 @@ const PeParams* pe_params_from_chain(PeTextChunk*  chain,
     }
     params->fileinfo.texts_count = i;
 
+    // intenta parsear los parametros de generacion
+    bool x = _parse_params(params);
+    if (!x) {
+        report(PEREPORT_ERROR, "Failed to parse params");
+        pe_destroy_params(params);
+        params = NULL;
+    }
     return params;
 }
 
@@ -146,5 +190,9 @@ const PeParams* pe_params_from_chain(PeTextChunk*  chain,
 // Destroys and frees the memory allocated for a PeParams structure.
 void pe_destroy_params(const PeParams* params
 ){
-    if (params) { free((void*)params);  }
+    if (params) {
+        if (params->_storage.user1) { free((void*)params->_storage.user1); }
+        if (params->_storage.user2) { free((void*)params->_storage.user2); }
+        free((void*)params);
+    }
 }

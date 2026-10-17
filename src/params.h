@@ -1,87 +1,21 @@
+/*
+| File    : params.h
+| Purpose : Handling generation parameters extracted from AI image files.
+| Author  : Martin Rizzo | <martinrizzo@gmail.com>
+| Date    : Oct 9, 2026
+| Repo    : https://github.com/martin-rizzo/PromptExtractor
+| License : MIT
+|- - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+|                              PromptExtractor
+| A lightweight CLI tool to extract embedded prompts from AI-generated images.
+\_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _*/
 #ifndef PE__PARAMS_H__
 #define PE__PARAMS_H__
 #include <stdio.h>
 #include <stdbool.h>
-#include "types.h"     //< Basic types such as PeUTF8, PeBYTE, PeReportFn, etc. 
-#include "textchunk.h" //< PeTextChunk structure and related functions.
-
-
-/**
- * An optional integer value.
- */
-struct PeInt {
-    bool has_value; ///< Flag indicating if the integer value is present
-    int  value;     ///< The integer value
-};
-typedef struct PeInt PeInt;
-
-
-/**
- * An optional floating-point value.
- */
-struct PeFloat {
-    bool  has_value; ///< Flag indicating if the float value is present
-    float value;     ///< The floating-point value
-};
-typedef struct PeFloat PeFloat;
-
-
-/**
- * An optional string value.
- */
-struct PeString {
-    bool          has_value; ///< Flag indicating if the string value is present
-    const PeUTF8* value;     ///< The string value
-};
-typedef struct PeString PeString;
-
-
-/**
- * Represents a text variable extracted directly from an image file (JPEG, PNG, etc.).
- */
-struct PeTextContent {
-    const char*   id;           ///< Identifier of the variable in uppercase format (e.g., "USER_COMMENT")
-    const PeUTF8* name;         ///< Name of the variable as it appears in the file (e.g., "User Comment")
-    const PeUTF8* content;      ///< The text content of the variable (e.g., "This is the embedded text")
-    const size_t  content_size; ///< Size in bytes of the `content` buffer
-};
-typedef struct PeTextContent PeTextContent;
-
-
-/**
- * Information related to the original file from which parameters were extracted.
- */
-struct PeFileInfo {
-    const PeUTF8* name;                          ///< File name including extension
-    const PeUTF8* path;                          ///< Full path of the file
-    PeTextContent texts[PE_MAX_TEXTCHUNK_COUNT]; ///< Array of found text contents (max number of elements determined by `PE_MAX_TEXTCHUNK_COUNT`)
-    int           texts_count;                   ///< Number of text contents found in the file
-};
-typedef struct PeFileInfo PeFileInfo;
-
-
-/**
- * Internal storage buffer for parameter strings and user data.
- *
- * This structure manages the underlying memory buffer for all string data
- * referenced by the `PeParams` structure (e.g., `prompt`, `negative`, etc).
- * The `ptr` member points to a contiguous memory region where these strings
- * are stored; the size of this buffer is always sufficient to store any text
- * contents from `peparams.fileinfo.texts[n].content`. Likewise, the `size`
- * member indicates the total size in bytes.
- *
- * It also provides two user data pointers (`user1`, `user2`) that can be
- * allocated by external code (e.g., `prompt_fmt` implementations) to store
- * custom data. These pointers are automatically freed when the associated
- * `PeParams` structure is destroyed.
- */
-struct PeStorage {
-    void*  ptr;    ///< Pointer to the internal data buffer.
-    size_t size;   ///< Total size of the internal data buffer in bytes.
-    void*  user1;  ///< Optional user data pointer 1, automatically freed upon `PeParams` destruction.
-    void*  user2;  ///< Optional user data pointer 2, automatically freed upon `PeParams` destruction.
-};
-typedef struct PeStorage PeStorage;
+#include "types.h"       //< Basic types such as PeUTF8, PeBYTE, PeReportFn, etc. 
+#include "textchunk.h"   //< PeTextChunk structure and related functions.
+#include "params_defs.h" //< Definitions for parameter types, fileinfo and storage.
 
 
 /*============================ PeParams STRUCT ============================*/
@@ -90,13 +24,45 @@ typedef struct PeStorage PeStorage;
  * Generation parameters extracted from the AI image file.
  */
 struct PeParams {
-    PeString    prompt;    ///< Text prompt used for generation
-    PeString    negative;  ///< Negative prompt used for generation
-    PeInt       steps;     ///< Number of generation steps
-    PeInt       seed;      ///< Random seed for generation
-    PeFloat     cfg;       ///< Classifier-free guidance scale
-    PeFileInfo  fileinfo;  ///< Information related to the original image file (JPEG, PNG, etc.)
-    PeStorage   _storage;  ///< Internal buffer where the strings referenced by each parameter are actually stored.
+    PeString prompt;            ///< Text prompt used for generation
+    PeString negative_prompt;   ///< Negative prompt used for generation
+    PeString wildcard_prompt;   ///< Original prompt containing wildcards before dynamic expansion
+    PeString sampler;           ///< Sampling method algorithm name
+    PeLong   steps;             ///< Number of generation steps
+    PeFloat  cfg;               ///< Classifier-free guidance scale
+    PeLong   seed;              ///< Random seed for generation
+    PeLong   width;             ///< Base output width of the image
+    PeLong   height;            ///< Base output height of the image
+    PeFloat  denoising;         ///< Strength of the overall denoising effect
+    struct {// MODEL ------
+        PeString name;          ///< Name of the checkpoint model used
+        PeString hash;          ///< Unique hash identifier of the checkpoint model
+    } model;
+    struct {// HIRES.FIX ---
+        PeString upscaler;      ///< Upscaling algorithm used for Hires. fix
+        PeLong   steps;         ///< Generation steps specifically for Hires. fix
+        PeFloat  denoising;     ///< Denoising strength applied during Hires. fix upscaling
+        PeFloat  upscale;       ///< Requested target upscale multiplier factor
+        PeLong   width;         ///< Requested specific target upscale width
+        PeLong   height;        ///< Requested specific target upscale height
+        PeFloat  calc_upscale;  ///< Automatically calculated upscale multiplier based on inputs
+        PeLong   calc_width;    ///< Final calculated target pixel width for the output image
+        PeLong   calc_height;   ///< Final calculated target pixel height for the output image
+    } hires;
+    struct {// INPAINT -----
+        PeFloat denoising;     ///< Inpainting denoising strength applied only to the masked area
+        PeFloat mask_blur;     ///< Blur radius in pixels applied to the edges of the inpaint mask
+    } inpaint;
+    struct {// OVERRIDE SETTINGS
+        PeFloat     eta;       ///< Random noise scale modifier for ancestral samplers
+        PeLong      ensd;      ///< Eta Noise Seed Delta added to seed for replication compatibility
+        PeLong      clip_skip; ///< Number of final layers ignored in the CLIP text encoder
+    } settings;
+
+//-- FILE ----------------
+    PeFileInfo  fileinfo;       ///< Information related to the original image file (JPEG, PNG, etc.)
+//-- INTERNAL ------------
+    PeStorage   _storage;       ///< Internal buffer where the strings referenced by each parameter are stored
 };
 typedef struct PeParams PeParams;
 

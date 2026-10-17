@@ -15,6 +15,7 @@
 #include <string.h>
 #include <stdio.h>
 #include "types.h"
+#include "internal.h"
 #include "textchunk.h"
 #include "png.h"
 #define SAFE_BYTES 4  ///< bytes to pad to '\0' for security in strings
@@ -111,7 +112,7 @@ _has_png_signature( FILE *file ) {
 PeTextChunk* pe_textchunk_chain_from_png(FILE *     file,
                                          PeReportFn report
 ){
-    PE_UNUSED(report);
+    unused(report);
     #define CHUNK_HEADER_SIZE 8 /* CHUNK_LENGTH + CHUNK_TYPE */
     #define CHUNK_CRC_SIZE    4
     bool   text_found, end_of_file;

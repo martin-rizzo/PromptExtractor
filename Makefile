@@ -6,8 +6,8 @@ CFLAGS     = -std=c99 -pedantic -Wall -Wextra -Wunused-function -Isrc -Isrc/imag
 LDFLAGS    = 
 TARGET_DIR = bin
 TARGET     = $(TARGET_DIR)/promptex
-HEADERS    = $(wildcard src/*.h) $(wildcard src/image_fmt/*.h)
-SRCS       = $(wildcard src/*.c) $(wildcard src/image_fmt/*.c)
+HEADERS    = $(wildcard src/*.h) $(wildcard src/image_fmt/*.h) $(wildcard src/prompt_fmt/*.h)
+SRCS       = $(wildcard src/*.c) $(wildcard src/image_fmt/*.c) $(wildcard src/prompt_fmt/*.c)
 OBJS       = $(SRCS:.c=.o)
 
 # Define default installation prefix

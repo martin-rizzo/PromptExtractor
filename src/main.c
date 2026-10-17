@@ -13,6 +13,7 @@
 #include <stdio.h>
 #include <string.h>
 #include <stdbool.h>
+#include "internal.h"
 #include "params.h"
 #include "image_fmt/png.h"
 #include "image_fmt/jpeg.h"
@@ -96,7 +97,7 @@ void set_color_theme(int index) {
  * @return The exit code that should be returned by the command (0 == success)
  */
 int print_help(int argc, char* argv[]) {
-    PE_UNUSED(argc);
+    unused(argc);
     printf(HELP, argv[0], argv[0]);
     return 0;
 }
@@ -135,14 +136,23 @@ void print_report(PEREPORT_TYPE type, const PeUTF8* message) {
 static
 int print_prompt(FILE* stream, const PeUTF8* stream_name) {
     const PeParams* params = pe_params_from_stream(stream, stream_name, print_report);
-    printf("##>> PATH: %s\n", params->fileinfo.path);
-    printf("##>> NAME: %s\n", params->fileinfo.name);
-    for (int i=0; i<params->fileinfo.texts_count; ++i) {
-        printf("##>> %s (\"%s\"): %.60s\n",
-            params->fileinfo.texts[i].id,
-            params->fileinfo.texts[i].name,
-            params->fileinfo.texts[i].content
-        );
+    if (params) {
+        printf("##>> PATH: %s\n", params->fileinfo.path);
+        printf("##>> NAME: %s\n", params->fileinfo.name);
+
+        if (params->prompt.has_value) {
+            printf("##>> PROMPT: '%s'\n", params->prompt.value);
+        }
+
+        /*
+        for (int i=0; i<params->fileinfo.texts_count; ++i) {
+            printf("##>> %s (\"%s\"): %.60s\n",
+                params->fileinfo.texts[i].id,
+                params->fileinfo.texts[i].name,
+                params->fileinfo.texts[i].content
+            );
+        }
+        */
     }
     pe_destroy_params(params);
     return 0;

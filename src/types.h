@@ -14,9 +14,6 @@
 #include <stdlib.h>
 
 
-// Suppresses unused variable warnings.
-#define PE_UNUSED(x) ((void)&x);
-
 // Convenience macro for duplicating UTF-8 and ASCII strings.
 // Can be used as a direct replacement for strdup.
 #define pe_strdup(str) pe_strdup_utf8(str, 0, PE_ENCODING_UTF8)

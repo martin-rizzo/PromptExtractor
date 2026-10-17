@@ -80,25 +80,19 @@ size_t pe_compact_textchunk(const PeTextChunk* textchunk,
     size_t offset = 0;
 
     // copy `.id` and advance the offset
-    if (destbuf) {
-        memcpy(&destbuf[offset], textchunk->id, id_size);
-        if (out_id_ptr) { (*out_id_ptr) = (const char*)&destbuf[offset]; }
-    }
+    if (destbuf) { memcpy(&destbuf[offset], textchunk->id, id_size); }
+    if (out_id_ptr) { (*out_id_ptr) = destbuf ? (const char*)&destbuf[offset] : NULL; }
     offset = ALIGN_UP(offset + id_size);
 
     // copy `.name` and advance the offset
-    if (destbuf) {
-        memcpy(&destbuf[offset], textchunk->name, name_size);
-        if (out_name_ptr) { (*out_name_ptr) = (const PeUTF8*)&destbuf[offset]; }
-    }
+    if (destbuf) { memcpy(&destbuf[offset], textchunk->name, name_size); }
+    if (out_name_ptr) { (*out_name_ptr) = destbuf ? (const PeUTF8*)&destbuf[offset] : NULL; }
     offset = ALIGN_UP(offset + name_size);
 
     // copy `.content` and advance the offset
-    if (destbuf) {
-        memcpy(&destbuf[offset], textchunk->content, content_size);
-        if (out_content_ptr)  { (*out_content_ptr)  = (const PeUTF8*)&destbuf[offset]; }
-        if (out_content_size) { (*out_content_size) = content_size; }
-    }
+    if (destbuf) { memcpy(&destbuf[offset], textchunk->content, content_size); }
+    if (out_content_ptr)  { (*out_content_ptr)  = destbuf ? (const PeUTF8*)&destbuf[offset] : NULL; }
+    if (out_content_size) { (*out_content_size) = content_size; }
     offset = ALIGN_UP(offset + content_size);
    
     return offset;

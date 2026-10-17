@@ -14,6 +14,7 @@
 #include <stdbool.h>
 #include <string.h>
 #include "types.h"
+#include "internal.h"
 #include "textchunk.h"
 #include "jpeg.h"
 #define JPEG_ERROR (-1)
@@ -266,7 +267,7 @@ _read_exif_user_comment(FILE *file
 PeTextChunk* pe_textchunk_chain_from_jpeg(FILE*      file,
                                           PeReportFn report
 ){
-    PE_UNUSED(report);
+    unused(report);
     enum  {
         MARKER_SOI          = 0xFFD8,
         MARKER_EOI          = 0xFFD9,
