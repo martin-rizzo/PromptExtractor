@@ -5,4 +5,5 @@
 -Wunused-function
 -Iinclude
 -Ilibpromptex
+-Ilibpromptex
 -g

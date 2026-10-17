@@ -13,9 +13,9 @@
 #include <stdlib.h>
 #include <stdbool.h>
 #include <string.h>
-#include "types.h"
+#include <promptex/types.h>
+#include <promptex/params.h>
 #include "internal.h"
-#include "params.h"
 #include "a1111.h"
 
 // Maximum number of lines supported for A1111 metadata (usually 3)

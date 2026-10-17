@@ -14,7 +14,7 @@
 #include <stdbool.h>
 #include <string.h>
 #include <stdio.h>
-#include "types.h"
+#include <promptex/types.h>
 #include "internal.h"
 #include "textchunk.h"
 #include "png.h"

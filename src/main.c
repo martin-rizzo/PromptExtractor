@@ -1,5 +1,5 @@
 /*
-| File    : main.h
+| File    : main.c
 | Purpose : Parsing command line arguments and running the `promptex` command.
 | Author  : Martin Rizzo | <martinrizzo@gmail.com>
 | Date    : Oct 2, 2026
@@ -14,6 +14,7 @@
 #include <string.h>
 #include <stdbool.h>
 #include <promptex/params.h>
+#include "termcolors.h"
 typedef PeUTF8*       StringPtr;
 typedef const PeUTF8* ConstStringPtr;
 #define VERSION_MAJOR 0
@@ -34,32 +35,21 @@ static const char HELP[] =
 "    %s image1.png image2.jpg\n"
 "\n";
 
+
+void print_params(const PeParams* params, const TermColors* c);
+void print_json(const PeParams* params, const TermColors* c);
+
+
 /*============================== ANSI COLORS ==============================*/
 
-/**
- * Represents a set of ANSI color codes for terminal output.
- * 
- * This struct holds pointers to ANSI escape codes that define the color theme.
- * Each member corresponds to a specific color category.
- */
-struct TerminalColors {
-    const char *primary,   /**< Default text color.                  */
-               *highlight, /**< Highlight color for emphasis.        */
-               *data,      /**< Color for data values.               */
-               *success,   /**< Color for success messages.          */
-               *error,     /**< Color for error messages.            */
-               *info,      /**< Color for informational messages.    */
-               *reset;     /**< ANSI code to reset color to default. */
-};
-
-/** Instance of TerminalColors used to store the current color theme. */
-static struct TerminalColors C;
+/** Instance of TermColors used to store the current color theme. */
+static struct TermColors C;
 
 /**
  * Sets the current terminal color theme based on the provided index.
  *
  * This function configures the color theme by assigning appropriate ANSI
- * escape codes to the members of the global `TerminalColors` struct.
+ * escape codes to the members of the global `TermColors` struct.
  * If the index is 0, it disables all colors.
  *
  * @param index The theme index.
@@ -67,14 +57,15 @@ static struct TerminalColors C;
 void set_color_theme(int index) {
     switch( index ) {
         case 0:
-            C.primary = C.highlight = C.data = \
+            C.label = C.data = C.string = C.highlight =  \
             C.success = C.error = C.info = C.reset = "";
             break;
         case 1:
         default:
-            C.primary   = "\x1b[;37m";
-            C.highlight = "\x1b[1;37m";
-            C.data      = "\x1b[;32m";
+            C.label     = "\x1b[1;34m";
+            C.data      = "\x1b[0;32m";
+            C.string    = "\x1b[1;33m";
+            C.highlight = "\x1b[1;7;35m";
             C.success   = "\x1b[;1;32m";
             C.error     = "\x1b[;1;31m";
             C.info      = "\x1b[;1;34m";
@@ -134,22 +125,9 @@ static
 int print_prompt(FILE* stream, const PeUTF8* stream_name) {
     const PeParams* params = pe_params_from_stream(stream, stream_name, print_report);
     if (params) {
-        printf("##>> PATH: %s\n", params->fileinfo.path);
-        printf("##>> NAME: %s\n", params->fileinfo.name);
-
-        if (params->prompt.has_value) {
-            printf("##>> PROMPT: '%s'\n", params->prompt.value);
-        }
-
-        /*
-        for (int i=0; i<params->fileinfo.texts_count; ++i) {
-            printf("##>> %s (\"%s\"): %.60s\n",
-                params->fileinfo.texts[i].id,
-                params->fileinfo.texts[i].name,
-                params->fileinfo.texts[i].content
-            );
-        }
-        */
+        // printf("##>> PATH: %s\n", params->fileinfo.path);
+        // printf("##>> NAME: %s\n", params->fileinfo.name);
+        print_params(params, &C);
     }
     pe_destroy_params(params);
     return 0;

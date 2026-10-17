@@ -12,9 +12,10 @@
 # ==============================================================================
 # Compiler Options and Flags
 # ==============================================================================
+EXTRAFLAGS := -g
+#EXTRAFLAGS := -O2
 CC       := gcc
-CFLAGS   := -std=c99 -pedantic -Wall -Wextra -Wunused-function -Iinclude -Ilibpromptex -g
-#CFLAGS   := -std=c99 -pedantic -Wall -Wextra -Wunused-function  -Iinclude -O2 
+CFLAGS   := -std=c99 -pedantic -Wall -Wextra -Wunused-function -Iinclude -Ilibpromptex $(EXTRAFLAGS)
 AR       := ar
 ARFLAGS  := rcs
 
@@ -35,8 +36,10 @@ BIN_DIR   := bin
 # ==============================================================================
 # Automatic Source and Object File Detection
 # ==============================================================================
-# Static library source and object files
-LIB_SRCS := $(wildcard $(LIB_DIR)/*.c)
+# Static library source and object files (incluyendo subcarpetas)
+LIB_SRCS := $(wildcard $(LIB_DIR)/*.c) \
+            $(wildcard $(LIB_DIR)/image_fmt/*.c) \
+            $(wildcard $(LIB_DIR)/prompt_fmt/*.c)
 LIB_OBJS := $(patsubst $(LIB_DIR)/%.c, $(BUILD_DIR)/$(LIB_DIR)/%.o, $(LIB_SRCS))
 
 # Executable (CLI) source and object files
@@ -65,20 +68,22 @@ $(FINAL_LIB): $(LIB_OBJS) | $(BIN_DIR)
 	@echo "====== Creating static library: $@ ======"
 	$(AR) $(ARFLAGS) $@ $(LIB_OBJS)
 
-# Pattern rule to compile library objects
-$(BUILD_DIR)/$(LIB_DIR)/%.o: $(LIB_DIR)/%.c | $(BUILD_DIR)/$(LIB_DIR)
+# Pattern rule to compile library objects (crea subdirectorios automáticamente)
+$(BUILD_DIR)/$(LIB_DIR)/%.o: $(LIB_DIR)/%.c
+	@mkdir -p $(dir $@)
 	@echo "Compiling library component: $<"
 	$(CC) $(CFLAGS) -c $< -o $@
 
 # Pattern rule to compile CLI objects
-$(BUILD_DIR)/$(SRC_DIR)/%.o: $(SRC_DIR)/%.c | $(BUILD_DIR)/$(SRC_DIR)
+$(BUILD_DIR)/$(SRC_DIR)/%.o: $(SRC_DIR)/%.c
+	@mkdir -p $(dir $@)
 	@echo "Compiling CLI component: $<"
 	$(CC) $(CFLAGS) -c $< -o $@
 
 # ==============================================================================
 # Dynamic Directory Creation
 # ==============================================================================
-$(BIN_DIR) $(BUILD_DIR)/$(LIB_DIR) $(BUILD_DIR)/$(SRC_DIR):
+$(BIN_DIR):
 	@mkdir -p $@
 
 # ==============================================================================
