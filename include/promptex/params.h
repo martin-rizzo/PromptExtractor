@@ -13,8 +13,54 @@
 #define PE__PARAMS_H__
 #include <stdio.h>
 #include <stdbool.h>
-#include "types.h"       //< Basic types such as PeUTF8, PeBYTE, PeReportFn, etc. 
-#include "params_defs.h" //< Definitions for parameter types, fileinfo and storage.
+#include <promptex/types.h>  //< Basic types such as PeUTF8, PeBYTE, PeReportFn, etc. 
+
+/**
+ * Represents a text variable extracted directly from an image file (JPEG, PNG, etc.).
+ */
+struct PeTextContent {
+    const char*   id;           ///< Identifier of the variable in uppercase format (e.g., "USER_COMMENT")
+    const PeUTF8* name;         ///< Name of the variable as it appears in the file (e.g., "User Comment")
+    const PeUTF8* content;      ///< The text content of the variable (e.g., "This is the embedded text")
+    const size_t  content_size; ///< Size in bytes of the `content` buffer
+};
+typedef struct PeTextContent PeTextContent;
+
+
+/**
+ * Information related to the original file from which parameters were extracted.
+ */
+struct PeFileInfo {
+    const PeUTF8* name;                          ///< File name including extension
+    const PeUTF8* path;                          ///< Full path of the file
+    PeTextContent texts[PE_MAX_TEXTCHUNK_COUNT]; ///< Array of found text contents (max number of elements determined by `PE_MAX_TEXTCHUNK_COUNT`)
+    int           texts_count;                   ///< Number of text contents found in the file
+};
+typedef struct PeFileInfo PeFileInfo;
+
+
+/**
+ * Internal storage buffer for parameter strings and user data.
+ *
+ * This structure manages the underlying memory buffer for all string data
+ * referenced by the `PeParams` structure (e.g., `prompt`, `negative`, etc).
+ * The `ptr` member points to a contiguous memory region where these strings
+ * are stored; the size of this buffer is always sufficient to store any text
+ * contents from `peparams.fileinfo.texts[n].content`. Likewise, the `size`
+ * member indicates the total size in bytes.
+ *
+ * It also provides two user data pointers (`user1`, `user2`) that can be
+ * allocated by external code (e.g., `prompt_fmt` implementations) to store
+ * custom data. These pointers are automatically freed when the associated
+ * `PeParams` structure is destroyed.
+ */
+struct PeStorage {
+    void*  ptr;    ///< Pointer to the internal data buffer.
+    size_t size;   ///< Total size of the internal data buffer in bytes.
+    void*  user1;  ///< Optional user data pointer 1, automatically freed upon `PeParams` destruction.
+    void*  user2;  ///< Optional user data pointer 2, automatically freed upon `PeParams` destruction.
+};
+typedef struct PeStorage PeStorage;
 
 
 /*============================ PeParams STRUCT ============================*/

@@ -15,6 +15,7 @@
 #include <string.h>
 #include <promptex/types.h>
 #include <promptex/params.h>
+#include "params_set.h"
 #include "internal.h"
 #include "a1111.h"
 
@@ -192,8 +193,8 @@ _set_wxh(PeLong* width, PeLong* height, PeUTF8* strvalue) {
         str_height = ++ptr;
     }
 
-    pe_set_long(width , str_width);
-    pe_set_long(height, str_height);
+    pe_set_strlong(width , str_width);
+    pe_set_strlong(height, str_height);
 }
 
 
@@ -233,23 +234,23 @@ _set_param(PeParams* p, PeUTF8* name, PeUTF8* value, PTYPE ptype
     assert(value!=NULL);
     unused(ptype);
     
-      IF_NAME("Prompt"            ) pe_set_string(&p->prompt            , value);
-    ELIF_NAME("Negative prompt"   ) pe_set_string(&p->negative_prompt   , value);
-    ELIF_NAME("Wildcard prompt"   ) pe_set_string(&p->wildcard_prompt   , value);
-    ELIF_NAME("Model"             ) pe_set_string(&p->model.name        , value);
-    ELIF_NAME("Model hash"        ) pe_set_string(&p->model.hash        , value);
-    ELIF_NAME("Sampler"           ) pe_set_string(&p->sampler           , value);
-    ELIF_NAME("Steps"             ) pe_set_long  (&p->steps             , value);
-    ELIF_NAME("CFG scale"         ) pe_set_float (&p->cfg               , value);
-    ELIF_NAME("Seed"              ) pe_set_long  (&p->seed              , value);
-    ELIF_NAME("Denoising strength") pe_set_float (&p->denoising         , value);
-    ELIF_NAME("Hires upscaler"    ) pe_set_string(&p->hires.upscaler    , value);
-    ELIF_NAME("Hires steps"       ) pe_set_long  (&p->hires.steps       , value);
-    ELIF_NAME("Hires upscale"     ) pe_set_float (&p->hires.upscale     , value);
-    ELIF_NAME("Mask blur"         ) pe_set_float (&p->inpaint.mask_blur , value);
-    ELIF_NAME("Eta"               ) pe_set_float (&p->settings.eta      , value);
-    ELIF_NAME("ENSD"              ) pe_set_long  (&p->settings.ensd     , value);
-    ELIF_NAME("Clip skip"         ) pe_set_long  (&p->settings.clip_skip, value);
+      IF_NAME("Prompt"            ) pe_set_string  (&p->prompt            , value);
+    ELIF_NAME("Negative prompt"   ) pe_set_string  (&p->negative_prompt   , value);
+    ELIF_NAME("Wildcard prompt"   ) pe_set_string  (&p->wildcard_prompt   , value);
+    ELIF_NAME("Model"             ) pe_set_string  (&p->model.name        , value);
+    ELIF_NAME("Model hash"        ) pe_set_string  (&p->model.hash        , value);
+    ELIF_NAME("Sampler"           ) pe_set_string  (&p->sampler           , value);
+    ELIF_NAME("Steps"             ) pe_set_strlong (&p->steps             , value);
+    ELIF_NAME("CFG scale"         ) pe_set_strfloat(&p->cfg               , value);
+    ELIF_NAME("Seed"              ) pe_set_strlong (&p->seed              , value);
+    ELIF_NAME("Denoising strength") pe_set_strfloat(&p->denoising         , value);
+    ELIF_NAME("Hires upscaler"    ) pe_set_string  (&p->hires.upscaler    , value);
+    ELIF_NAME("Hires steps"       ) pe_set_strlong (&p->hires.steps       , value);
+    ELIF_NAME("Hires upscale"     ) pe_set_strfloat(&p->hires.upscale     , value);
+    ELIF_NAME("Mask blur"         ) pe_set_strfloat(&p->inpaint.mask_blur , value);
+    ELIF_NAME("Eta"               ) pe_set_strfloat(&p->settings.eta      , value);
+    ELIF_NAME("ENSD"              ) pe_set_strlong (&p->settings.ensd     , value);
+    ELIF_NAME("Clip skip"         ) pe_set_strlong (&p->settings.clip_skip, value);
     ELIF_NAME("Size"              ) _set_wxh(&p->width      , &p->height      , value);
     ELIF_NAME("Hires resize"      ) _set_wxh(&p->hires.width, &p->hires.height, value);
     /*

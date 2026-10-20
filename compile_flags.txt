@@ -5,5 +5,5 @@
 -Wunused-function
 -Iinclude
 -Ilibpromptex
--Ilibpromptex
+-Ilibpromptex/yyjson_0_13
 -g

@@ -15,7 +15,7 @@
 EXTRAFLAGS := -g
 #EXTRAFLAGS := -O2
 CC       := gcc
-CFLAGS   := -std=c99 -pedantic -Wall -Wextra -Wunused-function -Iinclude -Ilibpromptex $(EXTRAFLAGS)
+CFLAGS   := -std=c99 -pedantic -Wall -Wextra -Wunused-function -Iinclude -Ilibpromptex -Ilibpromptex/yyjson_0_13 $(EXTRAFLAGS)
 AR       := ar
 ARFLAGS  := rcs
 
@@ -37,9 +37,10 @@ BIN_DIR   := bin
 # Automatic Source and Object File Detection
 # ==============================================================================
 # Static library source and object files (incluyendo subcarpetas)
-LIB_SRCS := $(wildcard $(LIB_DIR)/*.c) \
-            $(wildcard $(LIB_DIR)/image_fmt/*.c) \
-            $(wildcard $(LIB_DIR)/prompt_fmt/*.c)
+LIB_SRCS := $(wildcard $(LIB_DIR)/*.c)             \
+            $(wildcard $(LIB_DIR)/image_fmt/*.c)   \
+            $(wildcard $(LIB_DIR)/prompt_fmt/*.c)  \
+			$(wildcard $(LIB_DIR)/yyjson_0_13/*.c)
 LIB_OBJS := $(patsubst $(LIB_DIR)/%.c, $(BUILD_DIR)/$(LIB_DIR)/%.o, $(LIB_SRCS))
 
 # Executable (CLI) source and object files
