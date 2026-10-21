@@ -43,6 +43,17 @@ typedef char PeUTF8;
  */
 typedef unsigned char PeBYTE;
 
+
+/**
+ * Represents the size of an image.
+ */
+struct PeImageSize {
+    unsigned width;
+    unsigned height;
+};
+typedef struct PeImageSize PeImageSize;
+
+
 /**
  * An optional string value.
  */

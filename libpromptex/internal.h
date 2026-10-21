@@ -11,6 +11,7 @@
 \_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _*/
 #ifndef PE__INTERNAL_H__
 #define PE__INTERNAL_H__
+#include <stdlib.h>
 #include <promptex/types.h>
 
 /**
@@ -21,18 +22,28 @@
  */
 #define unused(x) ((void)(&x))
 
-// Convenience macro for duplicating UTF-8 and ASCII strings.
-// Can be used as a direct replacement for strdup.
-#define pe_strdup(str) pe_strdup_utf8(str, 0, PE_ENCODING_UTF8)
+
+// Representa un tamaño nulo de imagen, generalmente retornado cuando el calculo da error.
+extern const PeImageSize _peEmptyImageSize;
+
+// ???
+#define EMPTY_IMAGE_SIZE _peEmptyImageSize;
+
+
+/*============================= TEXT HELPERS ==============================*/
+
+/** Returns `true` if both UTF8 strings are equal. */
+bool PeUTF8_equals(const PeUTF8* str1, const PeUTF8* str2);
+
+
+/** ??? */
+bool PeUTF8_startswith(const PeUTF8* str, const PeUTF8* prefix);
 
 
 /** Returns true if the character is considered whitespace. */
 static inline bool pe_isspace(PeUTF8 c) {
     return ('\x09' <= c && c <= ' ');
 }
-
-
-/*============================= TEXT HELPERS ==============================*/
 
 /**
  * Strips leading and trailing whitespace from a string in place.
@@ -141,6 +152,13 @@ PeUTF8* pe_strdup_utf8(const void* buffer, size_t bufsize, PE_ENCODING bufencodi
  */
 char* pe_strdup_UPPER_ASCII(const void* buffer, size_t bufsize, PE_ENCODING bufencoding);
 
+
+
+// Convenience function for duplicating UTF-8 and ASCII strings.
+// Can be used as a direct replacement for strdup.
+static inline PeUTF8* pe_strdup(const PeUTF8* str) {
+    return pe_strdup_utf8(str, 0, PE_ENCODING_UTF8);
+}
 
 
 #endif /*PE__INTERNAL_H__*/

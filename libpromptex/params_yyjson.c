@@ -12,7 +12,7 @@
 
 
 
-void pe_set_yylong(PeLong* long_, yyjson_val *object, const PeUTF8* key) {
+void pe_set_yylong(PeLong* long_, const yyjson_val *object, const PeUTF8* key) {
     assert(long_ != NULL);
     if (!object || !key) { return; }
 

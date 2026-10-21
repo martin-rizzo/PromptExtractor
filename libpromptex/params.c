@@ -58,12 +58,15 @@ _extract_textchunk_chain(FILE*      stream,
     return chain;
 }
 
+
 static bool
-_parse_params(PeParams* params
+_parse_params(PeParams*      params,
+              PeTextContent* texts,
+              int            text_count
 ){
     bool is_parsed = false;
-    if (!is_parsed) { is_parsed = pe_a1111_parse  (params); }
-    if (!is_parsed) { is_parsed = pe_comfyui_parse(params); }
+    if (!is_parsed) { is_parsed = pe_a1111_parse  (params, texts, text_count); }
+    if (!is_parsed) { is_parsed = pe_comfyui_parse(params, texts, text_count); }
     return is_parsed;
 }
 
@@ -147,11 +150,11 @@ const PeParams* pe_params_from_chain(PeTextChunk*  chain,
         textchunk = textchunk->_next;
         ++i;
     }
-    params->fileinfo.texts_count = i;
+    params->fileinfo.text_count = i;
 
     // intenta parsear los parametros de generacion
-    bool x = _parse_params(params);
-    if (!x) {
+    bool is_parsed = _parse_params(params, params->fileinfo.texts, params->fileinfo.text_count);
+    if (!is_parsed) {
         report(PEREPORT_ERROR, "Failed to parse params");
         pe_destroy_params(params);
         params = NULL;

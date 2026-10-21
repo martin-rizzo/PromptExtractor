@@ -33,8 +33,9 @@ typedef struct PeTextContent PeTextContent;
 struct PeFileInfo {
     const PeUTF8* name;                          ///< File name including extension
     const PeUTF8* path;                          ///< Full path of the file
-    PeTextContent texts[PE_MAX_TEXTCHUNK_COUNT]; ///< Array of found text contents (max number of elements determined by `PE_MAX_TEXTCHUNK_COUNT`)
-    int           texts_count;                   ///< Number of text contents found in the file
+    PeTextContent texts[PE_MAX_TEXTCHUNK_COUNT]; ///< Array of text contents found in the file
+                                                 ///  (max number of elements determined by `PE_MAX_TEXTCHUNK_COUNT`)
+    int           text_count;                    ///< Number of valid elements in the `texts` array.
 };
 typedef struct PeFileInfo PeFileInfo;
 

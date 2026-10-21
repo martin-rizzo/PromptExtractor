@@ -33,7 +33,7 @@
  * @param object Pointer to the `yyjson_val` object containing the JSON data.
  * @param key    The key of the variable in the JSON object.
  */
-void pe_set_yylong(PeLong* long_, yyjson_val *object, const PeUTF8* key);
+void pe_set_yylong(PeLong* long_, const yyjson_val *object, const PeUTF8* key);
 
 
 

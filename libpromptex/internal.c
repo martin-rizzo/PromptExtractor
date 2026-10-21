@@ -15,6 +15,8 @@
 #include <string.h>
 #include "internal.h"
 
+const PeImageSize _peEmptyImageSize = {0,0};
+
 
 /**
  * Extracts a 16-bit UTF-16 code unit from a byte buffer at a specified index.
@@ -81,6 +83,19 @@ size_t _codepoint_to_utf8(unsigned int codept, PeUTF8 *out) {
 ===========================================================================*/
 
 /*============================= TEXT HELPERS ==============================*/
+
+
+// Returns `true` if both UTF8 strings are equal.
+bool PeUTF8_equals(const PeUTF8* str1, const PeUTF8* str2) {
+    return strcmp(str1, str2) == 0;
+}
+
+
+bool PeUTF8_startswith(const PeUTF8* str, const PeUTF8* prefix) {
+    assert(str != NULL && prefix != NULL);
+    while (*prefix) { if (*str++ != *prefix++) { return false; } }
+    return true;
+}
 
 // Strips leading and trailing whitespace from a string in place.
 PeUTF8* pe_strip_inplace(PeUTF8* str, size_t len) {

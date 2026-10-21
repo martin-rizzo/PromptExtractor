@@ -1,6 +1,6 @@
 /*
 | File    : prompt_fmt/comfyui.h
-| Purpose :
+| Purpose : Parse ComfyUI prompt and workflow JSONs to extract generation parameters
 | Author  : Martin Rizzo | <martinrizzo@gmail.com>
 | Date    : Oct 14, 2026
 | Repo    : https://github.com/martin-rizzo/PromptExtractor
@@ -16,8 +16,10 @@
 #include <promptex/params.h>
 
 
-bool pe_comfyui_parse(PeParams* params);
+bool pe_comfyui_parse(PeParams*      out_params,
+                      PeTextContent* texts,
+                      int            text_count);
 
 
 
-#endif /*PE__A1111_H__*/
+#endif /*PE__COMFYUI_H__*/

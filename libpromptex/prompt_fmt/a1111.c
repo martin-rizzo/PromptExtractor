@@ -1,6 +1,6 @@
 /*
 | File    : prompt_fmt/a1111.c
-| Purpose :
+| Purpose : Parses A1111 metadata from the text chunks extracted from the image file (.PNG, .JPG, etc.)
 | Author  : Martin Rizzo | <martinrizzo@gmail.com>
 | Date    : Oct 10, 2026
 | Repo    : https://github.com/martin-rizzo/PromptExtractor
@@ -352,23 +352,29 @@ _set_params_from_lines(PeParams* params,
 |  ////////////////////////// PUBLIC FUNCTIONS ///////////////////////////  | 
 ===========================================================================*/
 
-
-bool pe_a1111_parse(PeParams* params
+// Parses A1111 metadata from extracted text chunks and populates the parameters.
+bool pe_a1111_parse(PeParams*      out_params,
+                    PeTextContent* texts,
+                    int            text_count
 ){
-    PeFileInfo* fileinfo = &params->fileinfo;
+    if (!out_params) { return false; }
 
     // check each extracted text from the file (fileinfo->texts[n])
     // to see if any matches the A1111 format.
-    int text_idx = _find_a1111_text_idx(fileinfo->texts, fileinfo->texts_count);
+    int text_idx = _find_a1111_text_idx(texts, text_count);
     if (text_idx<0) { return false; }
 
-    // use `_storage` as the buffer for raw_text;
-    // `_storage` is guaranteed to be large enough to
-    // hold any of the texts stored in `fileinfo->texts[n]`
-    PeUTF8* raw_text = params->_storage.ptr;
+    // use _storage as the buffer for `raw_text`, this buffer will hold
+    // the strings that the PeUTF8* pointers (in `out_params`) will point to;
+    // `out_params->_storage` is guaranteed to be large enough to hold any of
+    // the texts stored in `texts[n]`, but we verify it just in case.
+    if (out_params->_storage.size < texts[text_idx].content_size) {
+        return false;
+    }
+    PeUTF8* raw_text = out_params->_storage.ptr;
     memcpy(raw_text,
-           fileinfo->texts[text_idx].content,
-           fileinfo->texts[text_idx].content_size);
+           texts[text_idx].content,
+           texts[text_idx].content_size);
 
     // separate raw_text into text lines
     PeUTF8* lines[MAX_LINES];
@@ -378,5 +384,5 @@ bool pe_a1111_parse(PeParams* params
     }
 
     // set each of the parameters found in the text lines
-    return _set_params_from_lines(params, lines, line_count);
+    return _set_params_from_lines(out_params, lines, line_count);
 }
