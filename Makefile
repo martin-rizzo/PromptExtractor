@@ -12,47 +12,72 @@
 #============================================================================
 # Compiler Options and Flags
 #============================================================================
-EXTRAFLAGS := -g
-#EXTRAFLAGS := -O2
 
-CC       := gcc
-CFLAGS   := -std=c99 -pedantic -Wall -Wextra -Wunused-function -Iinclude -Ilibpromptex -Ilibpromptex/yyjson_0_13 $(EXTRAFLAGS)
+# Default build type
+BUILD_TYPE ?= release
+
+# Flags for automatic dependency generation (.d files)
+DEPFLAGS := -MMD -MP
+
+# Compiler and linker settings
 AR       := ar
 ARFLAGS  := rcs
+CC       := gcc
+CFLAGS   := -std=c99 -pedantic -Wall -Wextra -Wunused-function \
+            -Iinclude -Ilibpromptex -Ilibpromptex/yyjson_0_13 \
+            $(DEPFLAGS)
+LDFLAGS  :=
+
+# Build type specific flags
+ifeq ($(BUILD_TYPE),debug)
+    CFLAGS  += -g -O0 -DDEBUG
+    LDFLAGS += 
+else
+    CFLAGS  += -Os -s -ffunction-sections -fdata-sections -DNDEBUG
+    LDFLAGS += -Wl,--gc-sections
+endif
 
 #============================================================================
 # Final Target Names
 #============================================================================
-LIB_NAME := libpromptex.a
-BIN_NAME := promptex
+ifeq ($(BUILD_TYPE),debug)
+    BIN_NAME := promptexd
+    LIB_NAME := libpromptexd.a
+else
+    BIN_NAME := promptex
+    LIB_NAME := libpromptex.a
+endif
 
 #============================================================================
 # Directory Paths
 #============================================================================
-SRC_DIR   := src
-LIB_DIR   := libpromptex
-BUILD_DIR := build
-BIN_DIR   := bin
-OUT_LIB_DIR := lib
+SRCDIR    := src
+SRCLIBDIR := libpromptex
+OBJDIR    := build/$(BUILD_TYPE)
+BINDIR    := bin
+LIBDIR    := lib
 
 #============================================================================
 # Automatic Source and Object File Detection
 #============================================================================
-# Static library source and object files (incluyendo subcarpetas)
-LIB_SRCS := $(wildcard $(LIB_DIR)/*.c)               \
-            $(wildcard $(LIB_DIR)/image_fmt/*.c)     \
-            $(wildcard $(LIB_DIR)/prompt_fmt/*.c)    \
-            $(wildcard $(LIB_DIR)/yyjson_0_13/*.c)   \
-            $(wildcard $(LIB_DIR)/comfyui_nodes/*.c)
-LIB_OBJS := $(patsubst $(LIB_DIR)/%.c, $(BUILD_DIR)/$(LIB_DIR)/%.o, $(LIB_SRCS))
+# Static library source and object files (including subdirectories)
+LIB_SRCS := $(wildcard $(SRCLIBDIR)/*.c)               \
+            $(wildcard $(SRCLIBDIR)/image_fmt/*.c)     \
+            $(wildcard $(SRCLIBDIR)/prompt_fmt/*.c)    \
+            $(wildcard $(SRCLIBDIR)/yyjson_0_13/*.c)   \
+            $(wildcard $(SRCLIBDIR)/comfyui_nodes/*.c)
+LIB_OBJS := $(patsubst $(SRCLIBDIR)/%.c, $(OBJDIR)/$(SRCLIBDIR)/%.o, $(LIB_SRCS))
 
 # Executable (CLI) source and object files
-CLI_SRCS := $(wildcard $(SRC_DIR)/*.c)
-CLI_OBJS := $(patsubst $(SRC_DIR)/%.c, $(BUILD_DIR)/$(SRC_DIR)/%.o, $(CLI_SRCS))
+CLI_SRCS := $(wildcard $(SRCDIR)/*.c)
+CLI_OBJS := $(patsubst $(SRCDIR)/%.c, $(OBJDIR)/$(SRCDIR)/%.o, $(CLI_SRCS))
+
+# Track all generated dependency files
+ALL_DEPS := $(LIB_OBJS:.o=.d) $(CLI_OBJS:.o=.d)
 
 # Final products with full paths
-FINAL_LIB := $(OUT_LIB_DIR)/$(LIB_NAME)
-FINAL_BIN := $(BIN_DIR)/$(BIN_NAME)
+FINAL_LIB := $(LIBDIR)/$(LIB_NAME)
+FINAL_BIN := $(BINDIR)/$(BIN_NAME)
 
 #============================================================================
 # Compilation Rules (Main Rules)
@@ -62,41 +87,53 @@ FINAL_BIN := $(BIN_DIR)/$(BIN_NAME)
 all: $(FINAL_LIB) $(FINAL_BIN)
 
 # Rule to link the final binary (CLI) using the static library
-$(FINAL_BIN): $(CLI_OBJS) $(FINAL_LIB) | $(BIN_DIR)
-	@echo "====== Linking final executable: $@ ======"
-	$(CC) $(CFLAGS) $(CLI_OBJS) -L$(OUT_LIB_DIR) -lpromptex -o $@
+$(FINAL_BIN): $(CLI_OBJS) $(FINAL_LIB) | $(BINDIR)
+	@echo "====== Linking final executable: $@ (Build: $(BUILD_TYPE)) ======"
+	$(CC) $(CFLAGS) $(LDFLAGS) $(CLI_OBJS) $(FINAL_LIB) -o $@
 	@echo "Build successful! Executable created at: $@"
 
 # Rule to package the static library (.a)
-$(FINAL_LIB): $(LIB_OBJS) | $(OUT_LIB_DIR)
-	@echo "====== Creating static library: $@ ======"
+$(FINAL_LIB): $(LIB_OBJS) | $(LIBDIR)
+	@echo "====== Creating static library: $@ (Build: $(BUILD_TYPE)) ======"
 	$(AR) $(ARFLAGS) $@ $(LIB_OBJS)
 
-# Pattern rule to compile library objects (crea subdirectorios automáticamente)
-$(BUILD_DIR)/$(LIB_DIR)/%.o: $(LIB_DIR)/%.c
+# Pattern rule to compile library objects (automatically creates subdirectories)
+$(OBJDIR)/$(SRCLIBDIR)/%.o: $(SRCLIBDIR)/%.c
 	@mkdir -p $(dir $@)
-	@echo "Compiling library component: $<"
+	@echo "Compiling library component: $< ($(BUILD_TYPE))"
 	$(CC) $(CFLAGS) -c $< -o $@
 
 # Pattern rule to compile CLI objects
-$(BUILD_DIR)/$(SRC_DIR)/%.o: $(SRC_DIR)/%.c
+$(OBJDIR)/$(SRCDIR)/%.o: $(SRCDIR)/%.c
 	@mkdir -p $(dir $@)
-	@echo "Compiling CLI component: $<"
+	@echo "Compiling CLI component: $< ($(BUILD_TYPE))"
 	$(CC) $(CFLAGS) -c $< -o $@
 
 #============================================================================
 # Dynamic Directory Creation
 #============================================================================
-$(BIN_DIR) $(OUT_LIB_DIR):
+$(BINDIR) $(LIBDIR):
 	@mkdir -p $@
 
 #============================================================================
 # Project Cleanup
 #============================================================================
 clean:
-	@echo "Cleaning up compilation files..."
-	rm -rf $(BUILD_DIR) $(BIN_DIR) $(OUT_LIB_DIR)
+	@echo "Cleaning up all compilation files..."
+	rm -rf build bin lib
 	@echo "Cleanup completed."
 
 # Prevents conflicts if files named 'all' or 'clean' exist
-.PHONY: all clean
+.PHONY: all clean debug release
+
+# Specific targets for debug and release
+debug:
+	@$(MAKE) all BUILD_TYPE=debug
+
+release:
+	@$(MAKE) all BUILD_TYPE=release
+
+#============================================================================
+# Include Dependencies (crucial for .h changes)
+#============================================================================
+-include $(ALL_DEPS)
