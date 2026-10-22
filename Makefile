@@ -25,7 +25,7 @@ ARFLAGS  := rcs
 CC       := gcc
 CFLAGS   := -std=c99 -pedantic -Wall -Wextra -Wunused-function \
             -Iinclude -Ilibpromptex -Ilibpromptex/yyjson_0_13 \
-            $(DEPFLAGS)
+            $(DEPFLAGS) $(EXTRA_CFLAGS)
 LDFLAGS  :=
 
 # Build type specific flags
